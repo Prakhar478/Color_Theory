@@ -224,12 +224,12 @@ export default function ColorWheel() {
           id="colorWheel"
           width={SIZE}
           height={SIZE}
-          style={{ width: SIZE + 'px', height: SIZE + 'px' }}
+          style={{ width: '100%', height: 'auto', maxWidth: SIZE + 'px' }}
           onClick={handleCanvasClick}
         />
 
         {/* Dot ring */}
-        <div style={{ position: 'absolute', top: 0, left: 0, width: SIZE + 'px', height: SIZE + 'px', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', maxWidth: SIZE + 'px' }}>
           {SEGS.map((seg, i) => {
             const mid = segMid(i);
             const cx2 = CX + DOT_R * Math.cos(mid) - DOT_W / 2;
