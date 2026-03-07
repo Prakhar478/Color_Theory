@@ -52,8 +52,7 @@ export default function HSBStudio() {
               <span className="hsb-row-title">🎨 Hue</span>
               <span className="hsb-row-val">{hue}°</span>
             </div>
-            <div className="gradient-bar" style={{ background: hueBarBg }} />
-            <input type="range" className="hsb-sl" min="0" max="360" value={hue} onChange={e => setHue(+e.target.value)} />
+            <input type="range" className="hsb-sl" min="0" max="360" value={hue} onChange={e => setHue(+e.target.value)} style={{ background: hueBarBg }} />
             <div className="hsb-hint">The pure color — its angle on the color wheel (0°–360°). 0°=Red, 120°=Green, 240°=Blue.</div>
           </div>
 
@@ -63,8 +62,7 @@ export default function HSBStudio() {
               <span className="hsb-row-title">💧 Saturation</span>
               <span className="hsb-row-val">{sat}%</span>
             </div>
-            <div className="gradient-bar" style={{ background: satBarBg }} />
-            <input type="range" className="hsb-sl" min="0" max="100" value={sat} onChange={e => setSat(+e.target.value)} />
+            <input type="range" className="hsb-sl" min="0" max="100" value={sat} onChange={e => setSat(+e.target.value)} style={{ background: satBarBg }} />
             <div className="hsb-hint">How vivid or gray — 0% is pure gray, 100% is the most vivid version of the hue.</div>
           </div>
 
@@ -74,8 +72,7 @@ export default function HSBStudio() {
               <span className="hsb-row-title">☀️ Brightness</span>
               <span className="hsb-row-val">{bri}%</span>
             </div>
-            <div className="gradient-bar" style={{ background: briBarBg }} />
-            <input type="range" className="hsb-sl" min="0" max="100" value={bri} onChange={e => setBri(+e.target.value)} />
+            <input type="range" className="hsb-sl" min="0" max="100" value={bri} onChange={e => setBri(+e.target.value)} style={{ background: briBarBg }} />
             <div className="hsb-hint">How dark or bright — 0% is always black, 100% at full saturation = pure vivid color.</div>
           </div>
 
@@ -85,8 +82,7 @@ export default function HSBStudio() {
               <span className="hsb-row-title" style={{ color: 'var(--accent)' }}>🌑 Value (Shading)</span>
               <span className="hsb-row-val">{val}%</span>
             </div>
-            <div className="gradient-bar" style={{ background: valBarBg }} />
-            <input type="range" className="hsb-sl" min="0" max="100" value={val} onChange={e => setVal(+e.target.value)} />
+            <input type="range" className="hsb-sl" min="0" max="100" value={val} onChange={e => setVal(+e.target.value)} style={{ background: valBarBg }} />
             <div className="hsb-hint" style={{ color: 'rgba(232,255,71,0.6)' }}>How much black is mixed in — 0% = pure color, 100% = full black. This is the "Value" in color theory, controlling shade depth.</div>
             {/* Value steps inside slider card */}
             <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem' }}>
@@ -115,8 +111,7 @@ export default function HSBStudio() {
               <span className="hsb-row-title">🌙 Lightness (HSL)</span>
               <span className="hsb-row-val">{lit}%</span>
             </div>
-            <div className="gradient-bar" style={{ background: litBarBg }} />
-            <input type="range" className="hsb-sl" min="0" max="100" value={lit} onChange={e => setLit(+e.target.value)} />
+            <input type="range" className="hsb-sl" min="0" max="100" value={lit} onChange={e => setLit(+e.target.value)} style={{ background: litBarBg }} />
             <div className="hsb-hint">HSL lightness — 0%=black, 50%=pure hue, 100%=white. Different model from brightness.</div>
           </div>
         </div>
