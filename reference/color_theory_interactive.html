@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Theory — Interactive Learning</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131d;
+  --border: rgba(255,255,255,0.08);
+  --text: #f0eee8;
+  --muted: #999;
+  --accent: #e8ff47;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow-x: hidden; }
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 3rem;
+  background: rgba(10,10,15,0.88); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; letter-spacing: 0.05em; }
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 1.8rem; flex-wrap: wrap; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; transition: color .2s; cursor: pointer; }
+.nav-links a:hover { color: var(--text); }
+
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 8rem 2rem 4rem; position: relative; overflow: hidden;
+}
+.hero-bg { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(232,255,71,0.07) 0%, transparent 70%); }
+.hero h1 { font-family: 'Clash Display', sans-serif; font-size: clamp(3rem, 8vw, 7rem); line-height: 0.95; letter-spacing: -0.02em; position: relative; z-index: 1; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p { margin-top: 1.5rem; max-width: 520px; color: var(--muted); font-size: 1.05rem; line-height: 1.7; position: relative; z-index: 1; }
+.hero-chips { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem; position: relative; z-index: 1; }
+.chip { padding: 0.35rem 0.9rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.scroll-hint { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; animation: bounce 2s ease-in-out infinite; }
+.scroll-hint::after { content: ' ↓'; }
+@keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+.section-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+.section-title { font-family: 'Clash Display', sans-serif; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.05; margin-bottom: 1.2rem; }
+.section-desc { color: #bbb; max-width: 560px; line-height: 1.8; font-size: 0.95rem; }
+.sep { width: 100%; max-width: 1100px; height: 1px; background: var(--border); margin: 0 auto; }
+
+/* WHEEL */
+#wheel-section { text-align: center; }
+.scheme-btns { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center; margin: 1.5rem 0; }
+.scheme-btn {
+  padding: 0.5rem 1.2rem; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem; cursor: pointer; letter-spacing: 0.04em; transition: all .2s;
+}
+.scheme-btn:hover { border-color: rgba(232,255,71,0.35); color: var(--text); }
+.scheme-btn.active { background: var(--accent); color: #0a0a0f; border-color: var(--accent); font-weight: 600; }
+
+.wheel-wrap { position: relative; display: inline-block; margin: 2.5rem auto 0; }
+#colorWheel { display: block; cursor: pointer; }
+#dotRing { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+.cdot {
+  position: absolute; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5);
+  cursor: pointer; pointer-events: all;
+  transition: transform .25s, box-shadow .25s, opacity .25s, border-color .25s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.7);
+}
+.cdot:hover { border-color: white; transform: scale(1.35) !important; z-index: 20; box-shadow: 0 0 20px 6px var(--gc,white) !important; }
+.cdot.active {
+  border-color: white !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 0 30px 10px var(--gc,rgba(255,255,255,0.5)) !important;
+  transform: scale(1.45) !important; z-index: 25; opacity: 1 !important;
+}
+.cdot.dim { opacity: 0.12 !important; transform: scale(0.82) !important; box-shadow: none !important; }
+
+.wheel-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 116px; height: 116px; border-radius: 50%;
+  background: rgba(14,14,28,0.97); border: 2px solid rgba(255,255,255,0.14);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 3px; pointer-events: none;
+  transition: background .3s, border-color .3s, box-shadow .3s;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.wc-name { font-size: 0.78rem; font-weight: 600; color: white; }
+.wc-hex { font-family: monospace; font-size: 0.62rem; color: rgba(255,255,255,0.5); }
+
+#scheme-info {
+  margin: 1.2rem auto 0; padding: 1rem 1.5rem; max-width: 580px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; font-size: 0.88rem; color: #ccc; line-height: 1.75; min-height: 3rem;
+}
+
+/* PALETTES */
+.palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 1.4rem; margin-top: 3rem; }
+.palette-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: transform .2s, border-color .2s; }
+.palette-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.16); }
+.palette-swatch { height: 110px; display: flex; }
+.palette-swatch div { flex: 1; transition: flex .4s cubic-bezier(.34,1.56,.64,1); cursor: pointer; }
+.palette-swatch div:hover { flex: 2.2; }
+.palette-info { padding: 1.1rem; }
+.palette-name { font-family: 'Clash Display', sans-serif; font-size: 1rem; margin-bottom: 0.25rem; }
+.palette-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.6; }
+.palette-colors { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.65rem; }
+.htag { font-size: 0.66rem; padding: 0.2rem 0.45rem; border-radius: 4px; background: rgba(255,255,255,0.05); font-family: monospace; color: var(--muted); cursor: pointer; transition: all .15s; }
+.htag:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* RGB */
+.rgb-mixer { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; margin-top: 3rem; }
+@media(max-width:700px){ .rgb-mixer{grid-template-columns:1fr;} }
+.rgb-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.3rem; }
+.rgb-lbl { width: 1.4rem; font-weight: 700; font-size: 1rem; }
+.rgb-lbl.r{color:#ff5555;} .rgb-lbl.g{color:#55ff88;} .rgb-lbl.b{color:#5588ff;}
+input[type=range] { flex:1; -webkit-appearance:none; height:5px; border-radius:999px; outline:none; cursor:pointer; }
+input[type=range].r { background: linear-gradient(to right, #1a0000, #ff5555); }
+input[type=range].g { background: linear-gradient(to right, #001a00, #55ff88); }
+input[type=range].b { background: linear-gradient(to right, #00001a, #5588ff); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:white; box-shadow:0 0 6px rgba(0,0,0,0.5); }
+.rgb-num { width: 2.2rem; text-align: right; font-size: 0.82rem; color: var(--muted); font-family: monospace; }
+.rgb-preview { border-radius: 20px; aspect-ratio: 1; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: background .08s; }
+.rgb-hexv { font-family: 'Clash Display', sans-serif; font-size: 1.8rem; letter-spacing: 0.04em; }
+.rgb-sub { font-size: 0.78rem; font-family: monospace; opacity: 0.55; }
+.rgb-comp { margin-top: 1rem; padding: 0.75rem 1.2rem; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.comp-sw { width: 42px; height: 42px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.1); transition: background .08s; }
+
+/* HSB SECTION */
+.hsb-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; margin-top: 3rem; }
+@media(max-width:750px){ .hsb-layout{grid-template-columns:1fr;} }
+.hsb-row { margin-bottom: 1.8rem; }
+.hsb-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.55rem; }
+.hsb-row-title { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #e0e0e0; }
+.hsb-row-val { font-family: monospace; font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+.gradient-bar { height: 12px; border-radius: 8px; margin-bottom: 0.45rem; border: 1px solid rgba(255,255,255,0.08); }
+input[type=range].hsb-sl { width: 100%; height: 8px; border-radius: 999px; -webkit-appearance: none; outline: none; cursor: pointer; background: transparent; }
+input[type=range].hsb-sl::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: white; border: 3px solid rgba(0,0,0,0.35); box-shadow: 0 2px 10px rgba(0,0,0,0.7); cursor: pointer; }
+.hsb-hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.5; }
+
+.hsb-main-swatch { border-radius: 20px; height: 200px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; box-shadow: 0 8px 40px rgba(0,0,0,0.5); transition: background .05s; }
+.hsb-swatch-hex { font-family: 'Clash Display', sans-serif; font-size: 1.7rem; letter-spacing: 0.04em; }
+.hsb-swatch-vals { font-family: monospace; font-size: 0.72rem; opacity: 0.6; }
+
+.step-section { margin-top: 1.2rem; }
+.step-label { font-size: 0.68rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 0.5rem; }
+.step-row { display: flex; gap: 0.4rem; }
+.step-swatch { flex: 1; height: 48px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.07); transition: transform .2s; cursor: pointer; position: relative; }
+.step-swatch:hover { transform: scale(1.08); z-index: 5; }
+.step-pct { position: absolute; bottom: -1.2rem; left: 50%; transform: translateX(-50%); font-size: 0.56rem; color: var(--muted); white-space: nowrap; }
+
+.hsb-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 2.5rem; }
+@media(max-width:700px){ .hsb-cards{grid-template-columns:1fr;} }
+.hsb-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem; }
+.hsb-card-icon { font-size: 1.4rem; margin-bottom: 0.45rem; }
+.hsb-card-title { font-family: 'Clash Display', sans-serif; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.hsb-card-desc { font-size: 0.73rem; color: var(--muted); line-height: 1.6; }
+
+/* CONTRAST */
+.contrast-tool { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; }
+@media(max-width:700px){ .contrast-tool{grid-template-columns:1fr;} }
+.cpicker { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; }
+.cpicker label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 0.65rem; }
+.color-row { display: flex; gap: 0.7rem; align-items: center; }
+input[type=color] { width: 48px; height: 48px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; outline: 2px solid var(--border); outline-offset: 2px; }
+.hex-in { flex:1; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 0.55rem 0.75rem; font-family: monospace; font-size: 0.88rem; outline: none; transition: border-color .2s; }
+.hex-in:focus { border-color: rgba(232,255,71,0.4); }
+.contrast-preview { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+.contrast-inner { padding: 2.2rem; transition: background .2s, color .2s; }
+.contrast-inner h3 { font-family: 'Clash Display', sans-serif; font-size: 1.5rem; margin-bottom: 0.4rem; }
+.contrast-inner p { font-size: 0.88rem; line-height: 1.7; opacity: 0.88; }
+.contrast-score { padding: 1.1rem 1.4rem; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; }
+.contrast-ratio { font-family: 'Clash Display', sans-serif; font-size: 1.5rem; }
+.badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.badge { padding: 0.28rem 0.65rem; border-radius: 5px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; }
+.badge.pass { background: rgba(77,255,136,0.12); color: #4dff88; border: 1px solid rgba(77,255,136,0.28); }
+.badge.fail { background: rgba(255,77,77,0.12); color: #ff5555; border: 1px solid rgba(255,77,77,0.28); }
+
+/* PSYCHOLOGY */
+.psych-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: 1rem; margin-top: 3rem; }
+.psych-card { border-radius: 14px; padding: 1.4rem; border: 1px solid transparent; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.psych-card:hover { transform: translateY(-4px) scale(1.02); }
+.psych-dot { width: 46px; height: 46px; border-radius: 50%; margin-bottom: 0.9rem; border: 2px solid rgba(255,255,255,0.2); }
+.psych-name { font-family: 'Clash Display', sans-serif; font-size: 1rem; margin-bottom: 0.25rem; }
+.psych-mood { font-size: 0.73rem; opacity: 0.7; line-height: 1.6; }
+.psych-uses { margin-top: 0.6rem; font-size: 0.65rem; opacity: 0.45; font-style: italic; }
+
+/* COLOR VALUES (Shades/Tints/Tones) */
+.values-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3rem; }
+@media(max-width:700px){ .values-grid{grid-template-columns:1fr;} }
+.values-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.values-card-title { font-family: 'Clash Display', sans-serif; font-size: 1rem; padding: 1rem 1.2rem 0.5rem; }
+.values-card-desc { font-size: 0.74rem; color: var(--muted); padding: 0 1.2rem 0.8rem; line-height: 1.6; }
+.values-strip { height: 56px; display: flex; }
+.values-strip div { flex: 1; transition: flex .3s; cursor: pointer; }
+.values-strip div:hover { flex: 2; }
+.values-hue-picker { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; }
+.values-hue-picker label { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.values-hue-picker input[type=range] { flex: 1; height: 8px; }
+
+/* PRIMARY SECONDARY TERTIARY */
+.color-mix-lab { margin-top: 3rem; }
+.mix-tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.mix-tab { padding: 0.5rem 1.2rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 0.8rem; cursor: pointer; transition: all .2s; font-family: 'Space Grotesk', sans-serif; }
+.mix-tab.active { background: var(--accent); color: #0a0a0f; border-color: var(--accent); font-weight: 600; }
+.mix-display { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+@media(max-width:700px){ .mix-display{grid-template-columns:1fr;} }
+.mix-canvas-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.mix-info { }
+.mix-info-title { font-family: 'Clash Display', sans-serif; font-size: 1.4rem; margin-bottom: 0.75rem; }
+.mix-info-desc { font-size: 0.85rem; color: #bbb; line-height: 1.8; margin-bottom: 1.2rem; }
+.mix-colors-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+.mix-color-chip { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-size: 0.78rem; }
+.mix-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+
+/* RGB vs CMYK */
+.models-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; }
+@media(max-width:700px){ .models-grid{grid-template-columns:1fr;} }
+.model-card { border-radius: 16px; padding: 1.8rem; border: 1px solid var(--border); background: var(--surface); }
+.model-card-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+.model-card-title { font-family: 'Clash Display', sans-serif; font-size: 1.3rem; margin-bottom: 0.5rem; }
+.model-card-sub { font-size: 0.75rem; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.model-card-desc { font-size: 0.82rem; color: #bbb; line-height: 1.7; margin-bottom: 1.2rem; }
+.model-circles { display: flex; justify-content: center; margin: 1.5rem 0; position: relative; height: 140px; }
+.mc { position: absolute; width: 90px; height: 90px; border-radius: 50%; mix-blend-mode: screen; opacity: 0.85; }
+.mc-sub { position: absolute; width: 90px; height: 90px; border-radius: 50%; mix-blend-mode: multiply; opacity: 0.85; }
+.model-uses { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.model-use-tag { font-size: 0.68rem; padding: 0.2rem 0.6rem; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border); }
+.cmyk-sliders { margin-top: 1rem; }
+.cmyk-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.8rem; }
+.cmyk-lbl { width: 1.2rem; font-size: 0.78rem; font-weight: 700; }
+.cmyk-num { width: 2rem; font-size: 0.75rem; font-family: monospace; color: var(--muted); text-align: right; }
+.cmyk-preview { height: 60px; border-radius: 12px; margin-top: 0.75rem; transition: background .1s; border: 1px solid var(--border); }
+
+/* COLOR TEMPERATURE */
+.temp-spectrum { margin-top: 2.5rem; }
+.temp-bar { height: 60px; border-radius: 12px; background: linear-gradient(to right, #1a0a3e,#3344dd,#4499ff,#ffffff,#ffee88,#ff8800,#cc2200); margin-bottom: 1rem; border: 1px solid var(--border); position: relative; }
+.temp-labels { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-bottom: 2rem; }
+.temp-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 1.2rem; }
+.temp-card { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+.temp-card-swatch { height: 80px; }
+.temp-card-body { padding: 1rem; background: var(--surface); }
+.temp-card-title { font-family: 'Clash Display', sans-serif; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.temp-card-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.6; }
+.temp-kelvin { font-size: 0.65rem; color: var(--accent); font-family: monospace; margin-top: 0.3rem; }
+
+/* BLACK & WHITE */
+.bw-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; margin-top: 3rem; }
+@media(max-width:700px){ .bw-layout{grid-template-columns:1fr;} }
+.bw-canvas-wrap { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+.bw-controls { }
+.bw-slider-row { margin-bottom: 1.5rem; }
+.bw-slider-label { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.5rem; }
+.bw-slider-title { color: #ddd; font-weight: 600; }
+.bw-slider-val { color: var(--accent); font-family: monospace; }
+.bw-presets { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.bw-preset { padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 0.75rem; cursor: pointer; transition: all .2s; color: var(--muted); }
+.bw-preset:hover, .bw-preset.active { border-color: var(--accent); color: var(--accent); }
+
+/* PALETTE GENERATOR */
+.gen-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 2rem; margin-bottom: 1.5rem; }
+.gen-btn { padding: 0.6rem 1.4rem; border-radius: 999px; border: none; background: var(--accent); color: #0a0a0f; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+.gen-btn:hover { opacity: 0.85; transform: scale(1.03); }
+.gen-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.gen-scheme-select { padding: 0.55rem 1rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; cursor: pointer; outline: none; }
+.gen-base-row { display: flex; align-items: center; gap: 0.75rem; }
+.gen-palette { display: flex; gap: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 1.5rem; height: 120px; }
+.gen-swatch { flex: 1; position: relative; transition: flex .3s cubic-bezier(.34,1.56,.64,1); cursor: pointer; }
+.gen-swatch:hover { flex: 2; }
+.gen-swatch-label { position: absolute; bottom: 0.5rem; left: 50%; transform: translateX(-50%); font-size: 0.62rem; font-family: monospace; white-space: nowrap; padding: 0.2rem 0.4rem; border-radius: 4px; background: rgba(0,0,0,0.5); color: white; opacity: 0; transition: opacity .2s; }
+.gen-swatch:hover .gen-swatch-label { opacity: 1; }
+.gen-saved { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 1rem; margin-top: 1rem; }
+.gen-saved-card { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.gen-saved-strip { height: 50px; display: flex; }
+.gen-saved-strip div { flex: 1; }
+.gen-saved-label { padding: 0.5rem 0.75rem; background: var(--surface); font-size: 0.7rem; color: var(--muted); }
+
+/* 60-30-10 RULE */
+.rule-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; margin-top: 3rem; }
+@media(max-width:700px){ .rule-layout{grid-template-columns:1fr;} }
+.rule-visual { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+.rule-room { position: relative; height: 340px; background: #1a1a2e; transition: background .3s; overflow: hidden; }
+.rule-controls { }
+.rule-row { margin-bottom: 1.5rem; }
+.rule-row-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+.rule-row-title { font-size: 0.82rem; font-weight: 600; color: #ddd; }
+.rule-row-pct { font-size: 0.8rem; color: var(--accent); font-family: monospace; font-weight: 600; }
+.rule-info-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin-top: 2rem; }
+.rule-info-card { border-radius: 12px; padding: 1rem; border: 1px solid var(--border); text-align: center; }
+.rule-pct-big { font-family: 'Clash Display', sans-serif; font-size: 2rem; }
+.rule-role { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* GRADIENTS */
+.grad-layout { margin-top: 3rem; }
+.grad-preview { height: 120px; border-radius: 16px; margin-bottom: 1.5rem; border: 1px solid var(--border); transition: all .1s; }
+.grad-controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem; }
+@media(max-width:700px){ .grad-controls-row{grid-template-columns:1fr;} }
+.grad-type-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.grad-type-btn { padding: 0.45rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 0.78rem; cursor: pointer; transition: all .2s; font-family: 'Space Grotesk', sans-serif; }
+.grad-type-btn.active { border-color: var(--accent); color: var(--accent); }
+.grad-stops { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.grad-stop { display: flex; align-items: center; gap: 0.4rem; }
+.grad-stop-swatch { width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; }
+.grad-gallery { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 1rem; margin-top: 2rem; }
+.grad-card { height: 80px; border-radius: 12px; cursor: pointer; transition: transform .2s; border: 1px solid var(--border); position: relative; overflow: hidden; }
+.grad-card:hover { transform: scale(1.04); }
+.grad-card-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.5); font-size: 0.65rem; color: white; opacity: 0; transition: opacity .2s; }
+.grad-card:hover .grad-card-label { opacity: 1; }
+
+footer { border-top: 1px solid var(--border); padding: 2.5rem 3rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; color: var(--muted); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Color<span>Theory</span></div>
+  <div class="nav-links">
+    <a onclick="goTo('wheel-section')">Wheel</a>
+    <a onclick="goTo('primary-section')">Primaries</a>
+    <a onclick="goTo('values-section')">Values</a>
+    <a onclick="goTo('models-section')">RGB vs CMYK</a>
+    <a onclick="goTo('rgb-section')">RGB</a>
+    <a onclick="goTo('hsb-section')">HSB</a>
+    <a onclick="goTo('palette-section')">Schemes</a>
+    <a onclick="goTo('temperature-section')">Temperature</a>
+    <a onclick="goTo('contrast-section')">Contrast</a>
+    <a onclick="goTo('generator-section')">Generator</a>
+    <a onclick="goTo('rule-section')">60-30-10</a>
+    <a onclick="goTo('gradient-section')">Gradients</a>
+    <a onclick="goTo('bw-section')">B&amp;W</a>
+    <a onclick="goTo('psychology-section')">Psychology</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <h1>See <em>Color</em><br>Come Alive</h1>
+  <p>An interactive journey through Color Theory — explore color wheels, schemes, RGB, HSB saturation/brightness, and design psychology hands-on.</p>
+  <div class="hero-chips">
+    <div class="chip">Color Wheel</div>
+    <div class="chip">Shades & Tints</div>
+    <div class="chip">Primaries</div>
+    <div class="chip">RGB vs CMYK</div>
+    <div class="chip">Temperature</div>
+    <div class="chip">B&W Expression</div>
+    <div class="chip">Palette Generator</div>
+    <div class="chip">60-30-10 Rule</div>
+    <div class="chip">Gradients</div>
+  </div>
+  <div class="scroll-hint">Scroll to Explore</div>
+</div>
+
+<section id="wheel-section">
+  <div class="section-label">Part 01 — Color Wheel</div>
+  <h2 class="section-title">Pick a color.<br>See its family.</h2>
+  <p class="section-desc">Click any segment or dot on the wheel, then choose a color scheme to see which colors harmonize with it.</p>
+
+  <div class="scheme-btns">
+    <button class="scheme-btn active" data-scheme="none">No Scheme</button>
+    <button class="scheme-btn" data-scheme="complementary">Complementary</button>
+    <button class="scheme-btn" data-scheme="analogous">Analogous</button>
+    <button class="scheme-btn" data-scheme="triadic">Triadic</button>
+    <button class="scheme-btn" data-scheme="monochromatic">Monochromatic</button>
+    <button class="scheme-btn" data-scheme="split">Split-Complementary</button>
+  </div>
+
+  <div class="wheel-wrap" id="wheelWrap">
+    <canvas id="colorWheel"></canvas>
+    <div id="dotRing"></div>
+    <div class="wheel-center" id="wheelCenter">
+      <span class="wc-name">Click</span>
+      <span class="wc-hex">a color</span>
+    </div>
+  </div>
+
+  <div id="scheme-info">Choose a color on the wheel, then select a scheme above.</div>
+</section>
+<div class="sep"></div>
+
+<section id="primary-section">
+  <div class="section-label">Part 02 — Color Families</div>
+  <h2 class="section-title">Primary, Secondary<br>&amp; Tertiary.</h2>
+  <p class="section-desc">Colors are born from mixing. Click each tab to explore — and on the Primary tab, <strong style="color:var(--accent)">drag the circles together</strong> to mix them interactively.</p>
+  <div class="color-mix-lab">
+    <div class="mix-tabs">
+      <button class="mix-tab active" data-mix="primary">Primary Colors</button>
+      <button class="mix-tab" data-mix="secondary">Secondary Colors</button>
+      <button class="mix-tab" data-mix="tertiary">Tertiary Colors</button>
+    </div>
+    <div class="mix-display">
+      <div class="mix-canvas-wrap" style="position:relative;">
+        <canvas id="mixCanvas" width="300" height="300" style="border-radius:16px;border:1px solid var(--border);cursor:grab;display:block;"></canvas>
+        <div id="mixDragHint" style="position:absolute;bottom:0.5rem;left:0;right:0;text-align:center;font-size:0.65rem;color:rgba(232,255,71,0.6);pointer-events:none;">↑ Drag the circles to mix colors</div>
+      </div>
+      <div class="mix-info">
+        <div class="mix-info-title" id="mixTitle">The 3 Primary Colors</div>
+        <div class="mix-info-desc" id="mixDesc">Primary colors are the foundation of all color. They cannot be created by mixing other colors. In the RYB model used in art and design, the primaries are Red, Yellow, and Blue. Drag them together on the canvas to see the mixed color appear.</div>
+        <div id="mixResultBox" style="display:none;margin-top:1rem;padding:0.9rem 1.2rem;border-radius:12px;border:1px solid var(--border);background:var(--surface);">
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;letter-spacing:.08em;text-transform:uppercase;">Mix Result</div>
+          <div style="display:flex;gap:0.75rem;align-items:center;">
+            <div id="mixResultSwatch" style="width:50px;height:50px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);"></div>
+            <div>
+              <div id="mixResultName" style="font-family:'Clash Display',sans-serif;font-size:1rem;"></div>
+              <div id="mixResultHex" style="font-family:monospace;font-size:0.75rem;color:var(--muted);"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mix-colors-row" id="mixColors"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="values-section">
+  <div class="section-label">Part 03 — Color Values</div>
+  <h2 class="section-title">Shades, Tints<br>&amp; Tones.</h2>
+  <p class="section-desc">Every color has three dimensions of depth. Pick any hue below and watch how adding black (shade), white (tint), or gray (tone) transforms it.</p>
+  <div style="margin-top:2rem;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;">
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">Choose Hue</span>
+      <input type="range" id="valHue" min="0" max="360" value="200" style="flex:1;min-width:120px;height:10px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:linear-gradient(to right,hsl(0,100%,50%),hsl(60,100%,50%),hsl(120,100%,50%),hsl(180,100%,50%),hsl(240,100%,50%),hsl(300,100%,50%),hsl(360,100%,50%));">
+      <div id="valHueSwatch" style="width:44px;height:44px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);transition:background .1s;"></div>
+      <span id="valHueDeg" style="font-family:monospace;font-size:0.82rem;color:var(--accent);white-space:nowrap;">200°</span>
+    </div>
+  </div>
+  <div class="values-grid" style="margin-top:1.5rem;">
+    <div class="values-card">
+      <div class="values-card-title">🌑 Shades</div>
+      <div class="values-card-desc">Pure color + black. Darker and moodier.</div>
+      <div class="values-strip" id="shadesStrip"></div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0.5rem;font-size:0.6rem;color:var(--muted);"><span>Pure</span><span>+Black →</span></div>
+    </div>
+    <div class="values-card">
+      <div class="values-card-title">☀️ Tints</div>
+      <div class="values-card-desc">Pure color + white. Lighter and airier.</div>
+      <div class="values-strip" id="tintsStrip"></div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0.5rem;font-size:0.6rem;color:var(--muted);"><span>Pure</span><span>+White →</span></div>
+    </div>
+    <div class="values-card">
+      <div class="values-card-title">🌫️ Tones</div>
+      <div class="values-card-desc">Pure color + gray. Muted and sophisticated.</div>
+      <div class="values-strip" id="tonesStrip"></div>
+      <div style="display:flex;justify-content:space-between;padding:0.4rem 0.5rem;font-size:0.6rem;color:var(--muted);"><span>Pure</span><span>+Gray →</span></div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="models-section">
+  <div class="section-label">Part 04 — Color Models</div>
+  <h2 class="section-title">RGB vs CMYK.<br>Light vs Ink.</h2>
+  <p class="section-desc">Two completely different systems for making color — one uses light, the other uses ink. They work in the opposite way.</p>
+  <div class="models-grid">
+    <div class="model-card" style="border-color:rgba(100,150,255,0.25);">
+      <div class="model-card-icon">💡</div>
+      <div class="model-card-title">RGB</div>
+      <div class="model-card-sub">Additive — starts from black</div>
+      <div class="model-card-desc">Starts with <strong style="color:#fff">darkness</strong> and adds light. All three at full = white. Used in screens, TVs, monitors, cameras.</div>
+      <div style="position:relative;height:120px;margin:1rem 0;">
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#ff0000;mix-blend-mode:screen;opacity:0.85;left:50%;top:5px;transform:translateX(-50%);"></div>
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#00ff00;mix-blend-mode:screen;opacity:0.85;left:22%;top:38px;"></div>
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#0000ff;mix-blend-mode:screen;opacity:0.85;right:22%;top:38px;"></div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-bottom:1rem;">R+G+B = White · Additive mixing</div>
+      <div class="model-uses"><span class="model-use-tag">🖥️ Screens</span><span class="model-use-tag">📱 Phones</span><span class="model-use-tag">📸 Cameras</span><span class="model-use-tag">💡 LEDs</span></div>
+    </div>
+    <div class="model-card" style="border-color:rgba(255,150,100,0.25);background:#f5f5f0;">
+      <div class="model-card-icon">🖨️</div>
+      <div class="model-card-title" style="color:#111;">CMYK</div>
+      <div class="model-card-sub" style="color:#3a7a3a;">Subtractive — starts from white</div>
+      <div class="model-card-desc" style="color:#444;">Starts with <strong>white paper</strong> and subtracts light by layering inks. All three = near-black (K adds true black). Used in printing.</div>
+      <div style="position:relative;height:120px;margin:1rem 0;background:#fff;border-radius:8px;">
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#00ffff;mix-blend-mode:multiply;opacity:0.9;left:50%;top:5px;transform:translateX(-50%);"></div>
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#ff00ff;mix-blend-mode:multiply;opacity:0.9;left:22%;top:38px;"></div>
+        <div style="position:absolute;width:75px;height:75px;border-radius:50%;background:#ffff00;mix-blend-mode:multiply;opacity:0.9;right:22%;top:38px;"></div>
+      </div>
+      <div style="font-size:0.7rem;color:#888;text-align:center;margin-bottom:1rem;">C+M+Y = Black · Subtractive mixing</div>
+      <div class="model-uses"><span class="model-use-tag" style="color:#555;border-color:#ddd;background:#eee;">🖨️ Printing</span><span class="model-use-tag" style="color:#555;border-color:#ddd;background:#eee;">📰 Magazines</span><span class="model-use-tag" style="color:#555;border-color:#ddd;background:#eee;">📦 Packaging</span></div>
+    </div>
+  </div>
+  <div style="margin-top:2rem;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.8rem;">
+    <div style="font-family:'Clash Display',sans-serif;font-size:1rem;margin-bottom:1.2rem;">🎨 Try CMYK Mixing</div>
+    <div style="display:grid;grid-template-columns:1fr 100px;gap:2rem;align-items:center;">
+      <div>
+        <div class="cmyk-row"><span class="cmyk-lbl" style="color:#00cccc;">C</span><input type="range" id="cSlider" min="0" max="100" value="80" style="flex:1;height:5px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#eee,#00cccc);outline:none;cursor:pointer;"><span class="cmyk-num" id="cVal">80</span></div>
+        <div class="cmyk-row"><span class="cmyk-lbl" style="color:#cc00cc;">M</span><input type="range" id="mSlider" min="0" max="100" value="20" style="flex:1;height:5px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#eee,#cc00cc);outline:none;cursor:pointer;"><span class="cmyk-num" id="mVal">20</span></div>
+        <div class="cmyk-row"><span class="cmyk-lbl" style="color:#aaaa00;">Y</span><input type="range" id="ySlider" min="0" max="100" value="10" style="flex:1;height:5px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#eee,#cccc00);outline:none;cursor:pointer;"><span class="cmyk-num" id="yVal">10</span></div>
+        <div class="cmyk-row"><span class="cmyk-lbl" style="color:#888;">K</span><input type="range" id="kSlider" min="0" max="100" value="5" style="flex:1;height:5px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#eee,#000);outline:none;cursor:pointer;"><span class="cmyk-num" id="kVal">5</span></div>
+      </div>
+      <div style="text-align:center;">
+        <div id="cmykPreview" style="width:80px;height:80px;border-radius:14px;margin:0 auto;border:1px solid var(--border);transition:background .1s;"></div>
+        <div id="cmykHex" style="font-family:monospace;font-size:0.7rem;color:var(--muted);margin-top:0.4rem;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="rgb-section">
+  <div class="section-label">Part 05 — RGB Additive Model</div>
+  <h2 class="section-title">Build any color<br>from light.</h2>
+  <p class="section-desc">Every screen mixes Red, Green, and Blue light. Drag the sliders to mix any color and instantly see its HEX and complementary color.</p>
+  <div class="rgb-mixer">
+    <div>
+      <div class="rgb-row"><span class="rgb-lbl r">R</span><input type="range" class="r" id="rs" min="0" max="255" value="220"><span class="rgb-num" id="rv">220</span></div>
+      <div class="rgb-row"><span class="rgb-lbl g">G</span><input type="range" class="g" id="gs" min="0" max="255" value="60"><span class="rgb-num" id="gv">60</span></div>
+      <div class="rgb-row"><span class="rgb-lbl b">B</span><input type="range" class="b" id="bs" min="0" max="255" value="120"><span class="rgb-num" id="bv">120</span></div>
+      <div class="rgb-comp">
+        <div>
+          <div style="font-size:.74rem;color:var(--muted);margin-bottom:.25rem">Complementary Color</div>
+          <div style="font-family:monospace;font-size:.84rem" id="chex">#23C337</div>
+        </div>
+        <div class="comp-sw" id="csw"></div>
+      </div>
+    </div>
+    <div class="rgb-preview" id="rgbPrev">
+      <div class="rgb-hexv" id="rgbHex">#DC3C78</div>
+      <div class="rgb-sub" id="rgbSub">rgb(220, 60, 120)</div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="hsb-section">
+  <div class="section-label">Part 06 — HSB / HSL Color Studio</div>
+  <h2 class="section-title">Hue. Saturation.<br>Brightness. Value.</h2>
+  <p class="section-desc">The HSB model describes color the way humans see it. Drag each slider to discover exactly how Hue, Saturation, Brightness, and Value transform a color.</p>
+
+  <div class="hsb-layout">
+    <div>
+      <div class="hsb-row">
+        <div class="hsb-row-header">
+          <span class="hsb-row-title">🎨 Hue</span>
+          <span class="hsb-row-val" id="hueVal">200°</span>
+        </div>
+        <div class="gradient-bar" id="hueBar" style="height:12px;border-radius:8px;margin-bottom:.45rem;border:1px solid rgba(255,255,255,0.08)"></div>
+        <input type="range" class="hsb-sl" id="hueSlider" min="0" max="360" value="200" style="width:100%;height:8px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:transparent;">
+        <div class="hsb-hint">The pure color — its angle on the color wheel (0°–360°). 0°=Red, 120°=Green, 240°=Blue.</div>
+      </div>
+
+      <div class="hsb-row">
+        <div class="hsb-row-header">
+          <span class="hsb-row-title">💧 Saturation</span>
+          <span class="hsb-row-val" id="satVal">80%</span>
+        </div>
+        <div class="gradient-bar" id="satBar" style="height:12px;border-radius:8px;margin-bottom:.45rem;border:1px solid rgba(255,255,255,0.08)"></div>
+        <input type="range" class="hsb-sl" id="satSlider" min="0" max="100" value="80" style="width:100%;height:8px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:transparent;">
+        <div class="hsb-hint">How vivid or gray — 0% is pure gray, 100% is the most vivid version of the hue.</div>
+      </div>
+
+      <div class="hsb-row">
+        <div class="hsb-row-header">
+          <span class="hsb-row-title">☀️ Brightness</span>
+          <span class="hsb-row-val" id="briVal">70%</span>
+        </div>
+        <div class="gradient-bar" id="briBar" style="height:12px;border-radius:8px;margin-bottom:.45rem;border:1px solid rgba(255,255,255,0.08)"></div>
+        <input type="range" class="hsb-sl" id="briSlider" min="0" max="100" value="70" style="width:100%;height:8px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:transparent;">
+        <div class="hsb-hint">How dark or bright — 0% is always black, 100% at full saturation = pure vivid color.</div>
+      </div>
+
+      <!-- VALUE slider — how much black is mixed in -->
+      <div class="hsb-row" style="background:rgba(232,255,71,0.04);border:1px solid rgba(232,255,71,0.12);border-radius:12px;padding:0.9rem;margin-top:0.2rem;">
+        <div class="hsb-row-header">
+          <span class="hsb-row-title" style="color:var(--accent);">🌑 Value (Shading)</span>
+          <span class="hsb-row-val" id="valSliderVal">0%</span>
+        </div>
+        <div class="gradient-bar" id="valBar" style="height:12px;border-radius:8px;margin-bottom:.45rem;border:1px solid rgba(255,255,255,0.08)"></div>
+        <input type="range" class="hsb-sl" id="valSlider" min="0" max="100" value="0" style="width:100%;height:8px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:transparent;">
+        <div class="hsb-hint" style="color:rgba(232,255,71,0.6);">How much black is mixed in — 0% = pure color, 100% = full black. This is the "Value" in color theory, controlling shade depth.</div>
+        <div style="display:flex;gap:0.4rem;margin-top:0.75rem;" id="valSteps"></div>
+      </div>
+
+      <div class="hsb-row">
+        <div class="hsb-row-header">
+          <span class="hsb-row-title">🌙 Lightness (HSL)</span>
+          <span class="hsb-row-val" id="litVal">55%</span>
+        </div>
+        <div class="gradient-bar" id="litBar" style="height:12px;border-radius:8px;margin-bottom:.45rem;border:1px solid rgba(255,255,255,0.08)"></div>
+        <input type="range" class="hsb-sl" id="litSlider" min="0" max="100" value="55" style="width:100%;height:8px;border-radius:999px;-webkit-appearance:none;outline:none;cursor:pointer;background:transparent;">
+        <div class="hsb-hint">HSL lightness — 0%=black, 50%=pure hue, 100%=white. Different model from brightness.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="hsb-main-swatch" id="hsbSwatch">
+        <div class="hsb-swatch-hex" id="hsbHex">#2D8FB3</div>
+        <div class="hsb-swatch-vals" id="hsbVals">H:200° S:80% B:70%</div>
+      </div>
+
+      <!-- Value (shading) live preview -->
+      <div style="margin-top:0.8rem;border-radius:14px;overflow:hidden;border:1px solid rgba(232,255,71,0.2);">
+        <div id="valSwatch" style="height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;transition:background .05s;">
+          <div id="valSwatchHex" style="font-family:'Clash Display',sans-serif;font-size:1.1rem;letter-spacing:.04em;">#2D8FB3</div>
+          <div id="valSwatchDesc" style="font-size:0.68rem;font-family:monospace;opacity:0.6;">Value: 0% black mixed in</div>
+        </div>
+        <div style="padding:0.5rem 0.9rem;background:rgba(0,0,0,0.3);font-size:0.67rem;color:var(--accent);text-align:center;">↑ Value (shading) live preview</div>
+      </div>
+
+      <!-- HSL Lightness live preview -->
+      <div style="margin-top:0.8rem;border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+        <div id="litSwatch" style="height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;transition:background .05s;">
+          <div id="litSwatchHex" style="font-family:'Clash Display',sans-serif;font-size:1.1rem;letter-spacing:.04em;">#2D8FB3</div>
+          <div id="litSwatchVals" style="font-size:0.68rem;font-family:monospace;opacity:0.6;">HSL — H:200° S:90% L:55%</div>
+        </div>
+        <div style="padding:0.5rem 0.9rem;background:rgba(0,0,0,0.3);font-size:0.67rem;color:var(--muted);text-align:center;">↑ Lightness (HSL) live preview</div>
+      </div>
+
+      <div class="step-section">
+        <div class="step-label">Saturation Steps (same Hue &amp; Brightness)</div>
+        <div class="step-row" id="satSteps"></div>
+      </div>
+
+      <div class="step-section" style="margin-top:1.6rem">
+        <div class="step-label">Brightness Steps (same Hue &amp; Saturation)</div>
+        <div class="step-row" id="briSteps"></div>
+      </div>
+
+      <div class="step-section" style="margin-top:1.6rem">
+        <div class="step-label">Lightness Steps / HSL tints &amp; shades</div>
+        <div class="step-row" id="litSteps"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hsb-cards" style="grid-template-columns:repeat(4,1fr)">
+    <div class="hsb-card">
+      <div class="hsb-card-icon">🎨</div>
+      <div class="hsb-card-title">Hue</div>
+      <div class="hsb-card-desc">The "which color" — its degree on the wheel. 0°=Red, 120°=Green, 240°=Blue.</div>
+    </div>
+    <div class="hsb-card">
+      <div class="hsb-card-icon">💧</div>
+      <div class="hsb-card-title">Saturation</div>
+      <div class="hsb-card-desc">How vivid or gray — 0% is neutral gray, 100% is the purest version of that hue.</div>
+    </div>
+    <div class="hsb-card">
+      <div class="hsb-card-icon">☀️</div>
+      <div class="hsb-card-title">Brightness</div>
+      <div class="hsb-card-desc">How dark or bright — 0% is black, 100% at full saturation is a vivid pure color.</div>
+    </div>
+    <div class="hsb-card" style="border-color:rgba(232,255,71,0.2);background:rgba(232,255,71,0.04);">
+      <div class="hsb-card-icon">🌑</div>
+      <div class="hsb-card-title" style="color:var(--accent);">Value</div>
+      <div class="hsb-card-desc">How much black is mixed into a color. 0% = pure, 100% = fully shaded to black. Creates depth.</div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="palette-section">
+  <div class="section-label">Part 07 — Color Schemes</div>
+  <h2 class="section-title">Four ways<br>colors relate.</h2>
+  <p class="section-desc">Hover swatches to expand. Click any HEX to copy it. Each palette follows a structured color theory approach.</p>
+  <div class="palette-grid" id="paletteGrid"></div>
+</section>
+<div class="sep"></div>
+
+<section id="temperature-section">
+  <div class="section-label">Part 08 — Color Temperature</div>
+  <h2 class="section-title">Warm vs Cool.<br>The feel of color.</h2>
+  <p class="section-desc">Colors have a perceived temperature. Warm colors advance and energize. Cool colors recede and calm. This deeply affects emotional response to any design.</p>
+  <div class="temp-spectrum">
+    <div class="temp-bar"></div>
+    <div class="temp-labels"><span>← Cool (10,000K) Blues/Purples</span><span>Neutral White (5,500K)</span><span>Warm (1,800K) Reds/Oranges →</span></div>
+  </div>
+  <div class="temp-grid">
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,#1a0a3e,#3344dd);"></div><div class="temp-card-body"><div class="temp-card-title">❄️ Cool Colors</div><div class="temp-card-desc">Blues, purples, cool greens. Recede, feel distant, calm, professional. Used in tech &amp; healthcare.</div><div class="temp-kelvin">5,000K – 10,000K</div></div></div>
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,#f5f0e8,#ffe8cc);"></div><div class="temp-card-body"><div class="temp-card-title">🌤️ Neutral</div><div class="temp-card-desc">Whites with a warm cast, cream tones. Feel natural and inviting like midday sunlight.</div><div class="temp-kelvin">~4,000–5,500K (Daylight)</div></div></div>
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,#ff8800,#ffcc00);"></div><div class="temp-card-body"><div class="temp-card-title">🔥 Warm Colors</div><div class="temp-card-desc">Yellows, oranges, reds. Advance toward the viewer, feel energetic, urgent, and inviting.</div><div class="temp-kelvin">2,700K – 4,000K</div></div></div>
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,#cc2200,#880000);"></div><div class="temp-card-body"><div class="temp-card-title">🌋 Hot Colors</div><div class="temp-card-desc">Deep reds and warm crimsons. Most intense warm tones — passionate, alarming, powerful.</div><div class="temp-kelvin">1,800K – 2,200K</div></div></div>
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,#3d6b3d,#88cc44);"></div><div class="temp-card-body"><div class="temp-card-title">🌿 Neutral Hue</div><div class="temp-card-desc">Greens sit in the middle — neither warm nor cool. Feel balanced, natural, and organic.</div><div class="temp-kelvin">Context-dependent</div></div></div>
+    <div class="temp-card"><div class="temp-card-swatch" style="background:linear-gradient(135deg,rgba(30,50,120,0.8),rgba(120,50,10,0.8));"></div><div class="temp-card-body"><div class="temp-card-title">🎨 Mixing Temps</div><div class="temp-card-desc">Cool + warm in one palette creates dynamic tension. Great for highlighting contrast in UI.</div><div class="temp-kelvin">Designer's choice</div></div></div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="contrast-section">
+  <div class="section-label">Part 09 — Contrast &amp; Readability</div>
+  <h2 class="section-title">Good design<br>is readable.</h2>
+  <p class="section-desc">WCAG requires 4.5:1 contrast ratio for normal text. Pick any two colors and see if they pass accessibility standards in real-time.</p>
+  <div class="contrast-tool">
+    <div>
+      <div class="cpicker">
+        <label>Text Color</label>
+        <div class="color-row"><input type="color" id="tc" value="#ffffff"><input type="text" class="hex-in" id="th" value="#ffffff" maxlength="7"></div>
+      </div>
+      <div style="height:.9rem"></div>
+      <div class="cpicker">
+        <label>Background Color</label>
+        <div class="color-row"><input type="color" id="bc" value="#1a1a2e"><input type="text" class="hex-in" id="bh" value="#1a1a2e" maxlength="7"></div>
+      </div>
+    </div>
+    <div>
+      <div class="contrast-preview">
+        <div class="contrast-inner" id="ci">
+          <h3>The quick brown fox</h3>
+          <p>Color contrast is the difference in brightness between foreground and background. Good contrast is essential for readability and accessibility for all users.</p>
+        </div>
+        <div class="contrast-score">
+          <div><div style="font-size:.68rem;color:var(--muted);margin-bottom:.2rem">CONTRAST RATIO</div><div class="contrast-ratio" id="cr">—</div></div>
+          <div class="badges" id="cb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="generator-section">
+  <div class="section-label">Part 10 — Palette Generator</div>
+  <h2 class="section-title">Generate your<br>own palette.</h2>
+  <p class="section-desc">Pick a base color and scheme. Click Generate to create a 5-color palette. Save palettes you like.</p>
+  <div class="gen-controls">
+    <div class="gen-base-row">
+      <input type="color" id="genBase" value="#3366ff" style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;outline:2px solid var(--border);outline-offset:2px;background:none;padding:0;">
+      <span style="font-size:0.8rem;color:var(--muted)">Base Color</span>
+    </div>
+    <select class="gen-scheme-select" id="genScheme">
+      <option value="complementary">Complementary</option>
+      <option value="analogous">Analogous</option>
+      <option value="triadic">Triadic</option>
+      <option value="split">Split-Complementary</option>
+      <option value="monochromatic">Monochromatic</option>
+      <option value="random">Random Harmony</option>
+    </select>
+    <button class="gen-btn" onclick="generatePalette()">✦ Generate</button>
+    <button class="gen-btn secondary" onclick="savePalette()">⊕ Save Palette</button>
+  </div>
+  <div class="gen-palette" id="genPalette"></div>
+  <div id="genSaved" class="gen-saved"></div>
+</section>
+<div class="sep"></div>
+
+<section id="rule-section">
+  <div class="section-label">Part 11 — The 60-30-10 Rule</div>
+  <h2 class="section-title">The golden ratio<br>of color.</h2>
+  <p class="section-desc">Pick three colors below and watch how the 60-30-10 rule creates a balanced, professional-looking composition in real time.</p>
+  <div class="rule-layout">
+    <div>
+      <div class="rule-visual">
+        <div class="rule-room" id="ruleRoom">
+          <div id="ruleDom" style="position:absolute;inset:0;transition:background .3s;"></div>
+          <div id="ruleSecond" style="position:absolute;bottom:0;left:0;right:0;height:38%;transition:background .3s;border-top:3px solid rgba(0,0,0,0.12);"></div>
+          <div id="ruleAccent" style="position:absolute;top:12%;left:8%;width:28%;height:58%;border-radius:10px;transition:background .3s;box-shadow:0 4px 24px rgba(0,0,0,0.4);"></div>
+          <div id="ruleAccent2" style="position:absolute;top:18%;right:7%;width:20%;height:42%;border-radius:8px;transition:background .3s;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
+          <div style="position:absolute;bottom:40%;left:38%;right:38%;height:5px;border-radius:3px;background:rgba(255,255,255,0.08);"></div>
+        </div>
+        <div style="padding:0.7rem 1rem;background:rgba(0,0,0,0.35);display:flex;justify-content:space-between;font-size:0.68rem;color:var(--muted);"><span>↑ Live composition preview</span></div>
+      </div>
+    </div>
+    <div class="rule-controls">
+      <div class="rule-row">
+        <div class="rule-row-header"><span class="rule-row-title">60% — Dominant</span><span class="rule-row-pct">Background / Walls</span></div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <input type="color" id="rule60" value="#1a2744" style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;outline:2px solid var(--border);padding:0;background:none;">
+          <div style="flex:1;height:40px;border-radius:8px;transition:background .2s;" id="rule60Preview"></div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;">Sets the overall mood. Should be calm and subtle — fills most of the space.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-row-header"><span class="rule-row-title">30% — Secondary</span><span class="rule-row-pct">Floors / Furniture</span></div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <input type="color" id="rule30" value="#2d4a8a" style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;outline:2px solid var(--border);padding:0;background:none;">
+          <div style="flex:1;height:40px;border-radius:8px;transition:background .2s;" id="rule30Preview"></div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;">Supports dominant color. Creates depth without competing.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-row-header"><span class="rule-row-title">10% — Accent</span><span class="rule-row-pct">Decor / Highlights</span></div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <input type="color" id="rule10" value="#e8ff47" style="width:48px;height:48px;border:none;border-radius:10px;cursor:pointer;outline:2px solid var(--border);padding:0;background:none;">
+          <div style="flex:1;height:40px;border-radius:8px;transition:background .2s;" id="rule10Preview"></div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;">The pop of color. Often complementary — draws the eye to key elements.</div>
+      </div>
+      <div class="rule-info-cards">
+        <div class="rule-info-card" id="ri60"><div class="rule-pct-big">60%</div><div class="rule-role">Dominant</div></div>
+        <div class="rule-info-card" id="ri30"><div class="rule-pct-big">30%</div><div class="rule-role">Secondary</div></div>
+        <div class="rule-info-card" id="ri10"><div class="rule-pct-big">10%</div><div class="rule-role">Accent</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="gradient-section">
+  <div class="section-label">Part 12 — Gradients</div>
+  <h2 class="section-title">Smooth color<br>transitions.</h2>
+  <p class="section-desc">A gradient transitions smoothly between colors. Build your own below or click any from the gallery.</p>
+  <div class="grad-layout">
+    <div class="grad-type-btns">
+      <button class="grad-type-btn active" data-gtype="linear">Linear</button>
+      <button class="grad-type-btn" data-gtype="radial">Radial</button>
+      <button class="grad-type-btn" data-gtype="conic">Conic</button>
+    </div>
+    <div id="gradAngleRow" style="display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:center;margin-bottom:1rem;">
+      <div><div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;letter-spacing:.08em;text-transform:uppercase;">Angle (Linear &amp; Conic)</div><input type="range" id="gradAngle" min="0" max="360" value="135" style="width:100%;height:6px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#333,#888);outline:none;cursor:pointer;"></div>
+      <div style="font-family:monospace;font-size:0.85rem;color:var(--accent);white-space:nowrap;" id="gradAngleVal">135°</div>
+    </div>
+    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;letter-spacing:.08em;text-transform:uppercase;">Color Stops</div>
+    <div class="grad-stops" id="gradStops">
+      <div class="grad-stop"><input type="color" class="grad-stop-swatch" value="#e8ff47" data-stop="0"><span style="font-size:0.7rem;color:var(--muted)">Stop 1</span></div>
+      <div class="grad-stop"><input type="color" class="grad-stop-swatch" value="#3366ff" data-stop="1"><span style="font-size:0.7rem;color:var(--muted)">Stop 2</span></div>
+      <div class="grad-stop"><input type="color" class="grad-stop-swatch" value="#ff3366" data-stop="2"><span style="font-size:0.7rem;color:var(--muted)">Stop 3</span></div>
+    </div>
+    <div class="grad-preview" id="gradPreview" style="height:130px;border-radius:16px;margin-bottom:1rem;border:1px solid var(--border);transition:all .1s;"></div>
+    <div style="font-family:monospace;font-size:0.72rem;color:var(--muted);padding:0.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:2rem;word-break:break-all;" id="gradCode"></div>
+    <div style="font-size:0.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:0.75rem;">Gallery — click to use</div>
+    <div class="grad-gallery" id="gradGallery"></div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="bw-section">
+  <div class="section-label">Part 13 — Black &amp; White</div>
+  <h2 class="section-title">Expression<br>without color.</h2>
+  <p class="section-desc">B&amp;W strips color to reveal form, contrast, and value. Adjust sliders to see how brightness, contrast, and grain change the expression of a composition.</p>
+  <div class="bw-layout">
+    <div>
+      <div style="margin-bottom:0.75rem;font-size:0.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;">Live Canvas</div>
+      <canvas id="bwCanvas" width="400" height="280" style="width:100%;border-radius:16px;border:1px solid var(--border);display:block;"></canvas>
+    </div>
+    <div class="bw-controls">
+      <div class="bw-slider-row">
+        <div class="bw-slider-label"><span class="bw-slider-title">Brightness</span><span class="bw-slider-val" id="bwBriVal">50%</span></div>
+        <input type="range" id="bwBri" min="0" max="100" value="50" style="width:100%;height:6px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#000,#fff);outline:none;cursor:pointer;">
+      </div>
+      <div class="bw-slider-row">
+        <div class="bw-slider-label"><span class="bw-slider-title">Contrast</span><span class="bw-slider-val" id="bwConVal">50%</span></div>
+        <input type="range" id="bwCon" min="0" max="100" value="50" style="width:100%;height:6px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#444,#fff);outline:none;cursor:pointer;">
+      </div>
+      <div class="bw-slider-row">
+        <div class="bw-slider-label"><span class="bw-slider-title">Film Grain</span><span class="bw-slider-val" id="bwGrainVal">0%</span></div>
+        <input type="range" id="bwGrain" min="0" max="100" value="0" style="width:100%;height:6px;border-radius:999px;-webkit-appearance:none;background:linear-gradient(to right,#222,#999);outline:none;cursor:pointer;">
+      </div>
+      <div style="margin-top:1rem;margin-bottom:0.5rem;font-size:0.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;">Presets</div>
+      <div class="bw-presets">
+        <button class="bw-preset active" data-bw="normal">Normal</button>
+        <button class="bw-preset" data-bw="highcontrast">High Contrast</button>
+        <button class="bw-preset" data-bw="lowkey">Low Key</button>
+        <button class="bw-preset" data-bw="highkey">High Key</button>
+        <button class="bw-preset" data-bw="film">Film Grain</button>
+      </div>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+        <div style="font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;">Why B&amp;W matters</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;">Without color, viewers focus purely on <strong style="color:#ddd">shape, form, and contrast</strong>. Designers test layouts in B&amp;W first — if it reads well without color, it will work with any palette.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="sep"></div>
+
+<section id="psychology-section">
+  <div class="section-label">Part 14 — Color Psychology</div>
+  <h2 class="section-title">Colors carry<br>emotion.</h2>
+  <p class="section-desc">Every color has psychological associations that skilled designers use deliberately to guide mood and behavior.</p>
+  <div class="psych-grid" id="psychGrid"></div>
+</section>
+
+<div class="sep"></div>
+
+<footer>
+  <div style="display:flex;flex-direction:column;gap:0.3rem;">
+    <div style="font-family:'Clash Display',sans-serif;font-size:1.05rem;color:#f0eee8;letter-spacing:0.02em;">Color Theory Assignment</div>
+    <div style="font-size:0.8rem;color:#bbb;">By <strong style="color:var(--accent)">Prakhar Srivastava</strong> &nbsp;·&nbsp; SAP ID: <span style="font-family:monospace;color:#ddd">590017406</span></div>
+    <div style="font-size:0.75rem;color:var(--muted)">Submitted to <strong style="color:#ccc">Pankaj Badoni</strong></div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;text-align:right;">
+    <div style="font-size:0.78rem;color:#bbb;">Course: <span style="color:#ddd">CSGG2012P</span> — Introduction to Graphics &amp; Animation</div>
+    <div style="font-size:0.75rem;color:var(--muted)">Unit: Design Fundamentals &nbsp;·&nbsp; CO3: Color Theory</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-top:.1rem;opacity:.6">Modality: Interactive Web-based Design</div>
+  </div>
+</footer>
+
+<script>
+/* ── UTILS ─────────────────────────────────────────────── */
+function goTo(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join(''); }
+function hexToRgb(hex){ return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)]; }
+
+function hsbToHex(h,s,b){
+  s/=100; b/=100;
+  const k=n=>(n+h/60)%6;
+  const f=n=>b-b*s*Math.max(0,Math.min(k(n),4-k(n),1));
+  return rgbToHex(f(5)*255,f(3)*255,f(1)*255);
+}
+function hslToHex(h,s,l){
+  s/=100; l/=100;
+  const k=n=>(n+h/30)%12;
+  const a=s*Math.min(l,1-l);
+  const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  return rgbToHex(f(0)*255,f(8)*255,f(4)*255);
+}
+function luminance(hex){
+  return hexToRgb(hex).reduce((acc,c,i)=>{
+    const s=c/255; const v=s<=0.03928?s/12.92:Math.pow((s+0.055)/1.055,2.4);
+    return acc+[0.2126,0.7152,0.0722][i]*v;
+  },0);
+}
+
+/* ── COLOR WHEEL ────────────────────────────────────────── */
+const canvas = document.getElementById('colorWheel');
+const ctx = canvas.getContext('2d');
+const SIZE = 500;
+canvas.width = SIZE; canvas.height = SIZE;
+canvas.style.width = SIZE+'px'; canvas.style.height = SIZE+'px';
+const CX=SIZE/2, CY=SIZE/2, R_OUT=228, R_IN=108;
+const N=12, SEG=(2*Math.PI)/N;
+// Yellow (idx=0) centered at top: mid-angle of seg0 = -90° → start = -90° - SEG/2
+const OFF = -Math.PI/2 - SEG/2;
+const TGAP = 0.016;
+
+const SEGS=[
+  {name:'Yellow',       type:'primary',   color:'#FFE600'},
+  {name:'Yellow-Orange',type:'tertiary',  color:'#FFAA00'},
+  {name:'Orange',       type:'secondary', color:'#FF6600'},
+  {name:'Red-Orange',   type:'tertiary',  color:'#FF3300'},
+  {name:'Red',          type:'primary',   color:'#EE1111'},
+  {name:'Red-Violet',   type:'tertiary',  color:'#CC1166'},
+  {name:'Violet',       type:'secondary', color:'#8822CC'},
+  {name:'Blue-Violet',  type:'tertiary',  color:'#4433CC'},
+  {name:'Blue',         type:'primary',   color:'#1155EE'},
+  {name:'Blue-Green',   type:'tertiary',  color:'#008866'},
+  {name:'Green',        type:'secondary', color:'#22AA33'},
+  {name:'Yellow-Green', type:'tertiary',  color:'#88CC00'},
+];
+
+function segMid(i){ return OFF+(i+0.5)*SEG; }
+
+// Draw a text label inside a segment — auto-rotates so it reads radially outward
+function drawLabel(ctx, seg, i, alpha){
+  const mid = segMid(i);
+  const lr = (R_IN + R_OUT)/2;
+  const lx = CX + lr*Math.cos(mid);
+  const ly = CY + lr*Math.sin(mid);
+
+  ctx.save();
+  ctx.translate(lx, ly);
+
+  // Rotate so text flows from center outward
+  // If segment is in right half (cos>0): rotate by mid+90° (text reads downward=outward)
+  // If segment is in left half (cos<0): rotate by mid-90° (flip to stay readable)
+  let rot = mid + Math.PI/2;
+  if(Math.cos(mid) < -0.001){ rot = mid - Math.PI/2; }
+  ctx.rotate(rot);
+
+  ctx.shadowColor='rgba(0,0,0,0.95)';
+  ctx.shadowBlur=6;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+
+  ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+  ctx.font=`bold 11.5px "Space Grotesk",sans-serif`;
+  ctx.fillText(seg.name.toUpperCase(), 0, -7);
+
+  ctx.fillStyle=`rgba(255,255,255,${alpha*0.6})`;
+  ctx.font=`9.5px "Space Grotesk",sans-serif`;
+  ctx.fillText(seg.type, 0, 6);
+
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawWheelFull(activeArr){
+  ctx.clearRect(0,0,SIZE,SIZE);
+
+  SEGS.forEach((seg,i)=>{
+    const sa=OFF+i*SEG+TGAP, ea=OFF+(i+1)*SEG-TGAP;
+    const isAct = !activeArr || activeArr.includes(i);
+
+    const grd=ctx.createRadialGradient(CX,CY,R_IN,CX,CY,R_OUT);
+    if(isAct){
+      grd.addColorStop(0, seg.color+'bb');
+      grd.addColorStop(0.5, seg.color+'ee');
+      grd.addColorStop(1, seg.color);
+    } else {
+      grd.addColorStop(0, seg.color+'18');
+      grd.addColorStop(0.5, seg.color+'30');
+      grd.addColorStop(1, seg.color+'50');
+    }
+    ctx.beginPath(); ctx.moveTo(CX,CY);
+    ctx.arc(CX,CY,R_OUT,sa,ea); ctx.closePath();
+    ctx.fillStyle=grd; ctx.fill();
+
+    // glow stroke for active segments when a scheme is active
+    if(isAct && activeArr){
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(CX,CY,R_OUT-5,sa+0.02,ea-0.02);
+      ctx.strokeStyle=seg.color+'cc';
+      ctx.lineWidth=8;
+      ctx.shadowColor=seg.color;
+      ctx.shadowBlur=20;
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // separator lines
+  for(let i=0;i<N;i++){
+    const a=OFF+i*SEG;
+    ctx.beginPath();
+    ctx.moveTo(CX+R_IN*Math.cos(a), CY+R_IN*Math.sin(a));
+    ctx.lineTo(CX+R_OUT*Math.cos(a), CY+R_OUT*Math.sin(a));
+    ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  // inner dark circle
+  const ig=ctx.createRadialGradient(CX,CY,0,CX,CY,R_IN);
+  ig.addColorStop(0,'#16162a'); ig.addColorStop(1,'#0c0c18');
+  ctx.beginPath(); ctx.arc(CX,CY,R_IN,0,Math.PI*2);
+  ctx.fillStyle=ig; ctx.fill();
+
+  // triangles
+  const tr=R_IN-20;
+  const sc=idx=>{ const a=segMid(idx); return {x:CX+tr*Math.cos(a),y:CY+tr*Math.sin(a)}; };
+  ctx.save(); ctx.setLineDash([]);
+  const [t0,t1,t2]=[sc(0),sc(4),sc(8)];
+  ctx.beginPath(); ctx.moveTo(t0.x,t0.y); ctx.lineTo(t1.x,t1.y); ctx.lineTo(t2.x,t2.y); ctx.closePath();
+  ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.setLineDash([4,4]);
+  const [d0,d1,d2]=[sc(2),sc(6),sc(10)];
+  ctx.beginPath(); ctx.moveTo(d0.x,d0.y); ctx.lineTo(d1.x,d1.y); ctx.lineTo(d2.x,d2.y); ctx.closePath();
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+
+  // labels
+  SEGS.forEach((seg,i)=>{
+    const isAct = !activeArr || activeArr.includes(i);
+    drawLabel(ctx, seg, i, isAct ? 0.96 : 0.2);
+  });
+}
+
+drawWheelFull(null);
+
+/* ── DOTS ───────────────────────────────────────────────── */
+const dotRing = document.getElementById('dotRing');
+dotRing.style.cssText=`position:absolute;top:0;left:0;width:${SIZE}px;height:${SIZE}px;pointer-events:none;`;
+const DOT_R=260, DOT_W=38;
+const dots=[];
+
+SEGS.forEach((seg,i)=>{
+  const mid=segMid(i);
+  const cx2=CX+DOT_R*Math.cos(mid)-DOT_W/2;
+  const cy2=CY+DOT_R*Math.sin(mid)-DOT_W/2;
+  const el=document.createElement('div');
+  el.className='cdot';
+  el.style.cssText=`width:${DOT_W}px;height:${DOT_W}px;left:${cx2}px;top:${cy2}px;background:${seg.color};--gc:${seg.color}aa;`;
+  el.title=seg.name;
+  el.addEventListener('click',()=>selectSeg(i));
+  dotRing.appendChild(el);
+  dots.push(el);
+});
+
+let selIdx=-1, curScheme='none';
+
+function selectSeg(i){
+  selIdx=i;
+  const seg=SEGS[i];
+  const wc=document.getElementById('wheelCenter');
+  wc.innerHTML=`<span class="wc-name">${seg.name}</span><span class="wc-hex">${seg.color}</span>`;
+  wc.style.background=seg.color+'28';
+  wc.style.borderColor=seg.color+'88';
+  wc.style.boxShadow=`0 0 22px 8px ${seg.color}44`;
+  applyScheme(curScheme);
+}
+
+function schemeIdxs(base,scheme){
+  const w=v=>((v%N)+N)%N;
+  if(scheme==='complementary') return [base,w(base+6)];
+  if(scheme==='analogous')     return [base,w(base-1),w(base+1)];
+  if(scheme==='triadic')       return [base,w(base+4),w(base+8)];
+  if(scheme==='monochromatic') return [base];
+  if(scheme==='split')         return [base,w(base+5),w(base+7)];
+  return null;
+}
+
+function applyScheme(scheme){
+  curScheme=scheme;
+  const INFO={
+    none:'Click any segment or dot, then choose a scheme to see color relationships.',
+    complementary:'<strong style="color:#fff">Complementary</strong> — colors directly opposite on the wheel (180°). Maximum contrast. Best for CTAs, highlights, and bold UI.',
+    analogous:'<strong style="color:#fff">Analogous</strong> — neighboring colors (±30°). Creates natural harmony. Common in nature-inspired and calm interfaces.',
+    triadic:'<strong style="color:#fff">Triadic</strong> — three colors 120° apart. Vibrant yet balanced. Use one as dominant, two as accents for a lively palette.',
+    monochromatic:'<strong style="color:#fff">Monochromatic</strong> — one hue, many shades/tints. Elegant and cohesive. Perfect for sophisticated minimalist design.',
+    split:'<strong style="color:#fff">Split-Complementary</strong> — base color + two neighbors of its complement. More subtle than pure complementary, still colorful.',
+  };
+  document.getElementById('scheme-info').innerHTML=INFO[scheme]||'';
+  dots.forEach(d=>{ d.classList.remove('active','dim'); });
+
+  if(scheme==='none'||selIdx<0){ drawWheelFull(null); return; }
+  const active=schemeIdxs(selIdx,scheme);
+  dots.forEach((d,i)=>{ if(active.includes(i)) d.classList.add('active'); else d.classList.add('dim'); });
+  drawWheelFull(active);
+}
+
+document.querySelectorAll('.scheme-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.scheme-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    applyScheme(btn.dataset.scheme);
+  });
+});
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=SIZE/rect.width, scaleY=SIZE/rect.height;
+  const mx=(e.clientX-rect.left)*scaleX, my=(e.clientY-rect.top)*scaleY;
+  const dx=mx-CX, dy=my-CY, dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<R_IN||dist>R_OUT) return;
+  let angle=Math.atan2(dy,dx)-OFF;
+  while(angle<0) angle+=2*Math.PI;
+  while(angle>=2*Math.PI) angle-=2*Math.PI;
+  selectSeg(Math.floor(angle/SEG)%N);
+});
+
+/* ── PALETTES ───────────────────────────────────────────── */
+const PALETTES=[
+  {name:'Complementary',desc:'Orange & Blue — max contrast, energetic. Opposite hues create visual tension.',colors:['#FF6B35','#FF9A5C','#FFD4B8','#0D5C8C','#1A8FD1']},
+  {name:'Analogous',desc:'Green→Teal — harmonious, natural, soothing. Adjacent hues flow together.',colors:['#2D6A4F','#40916C','#52B788','#74C69D','#A8E6CF']},
+  {name:'Triadic',desc:'Red, Yellow, Blue — vibrant and balanced. Three equidistant hues.',colors:['#E63946','#FFBE0B','#457B9D','#A8DADC','#F1FAEE']},
+  {name:'Monochromatic',desc:'Shades of Violet — elegant and refined. One hue from dark to light.',colors:['#1A0533','#3D0066','#6A0DAD','#B14FE5','#DDA0FF']},
+];
+const pg=document.getElementById('paletteGrid');
+PALETTES.forEach(p=>{
+  const card=document.createElement('div'); card.className='palette-card';
+  const sw=document.createElement('div'); sw.className='palette-swatch';
+  p.colors.forEach(c=>{ const d=document.createElement('div'); d.style.background=c; d.title=c; sw.appendChild(d); });
+  const inf=document.createElement('div'); inf.className='palette-info';
+  inf.innerHTML=`<div class="palette-name">${p.name}</div><div class="palette-desc">${p.desc}</div><div class="palette-colors">${p.colors.map(c=>`<span class="htag" style="border-left:3px solid ${c}" onclick="cpHex('${c}',this)">${c}</span>`).join('')}</div>`;
+  card.appendChild(sw); card.appendChild(inf); pg.appendChild(card);
+});
+function cpHex(h,el){ navigator.clipboard.writeText(h).catch(()=>{}); const o=el.textContent; el.textContent='Copied!'; el.style.color='var(--accent)'; setTimeout(()=>{ el.textContent=o; el.style.color=''; },1200); }
+
+/* ── RGB ────────────────────────────────────────────────── */
+function updateRGB(){
+  const r=+document.getElementById('rs').value,g=+document.getElementById('gs').value,b=+document.getElementById('bs').value;
+  ['rv','gv','bv'].forEach((id,i)=>document.getElementById(id).textContent=[r,g,b][i]);
+  const hex=rgbToHex(r,g,b);
+  document.getElementById('rgbPrev').style.background=hex;
+  document.getElementById('rgbHex').textContent=hex.toUpperCase();
+  document.getElementById('rgbSub').textContent=`rgb(${r}, ${g}, ${b})`;
+  const lum2=0.299*r+0.587*g+0.114*b;
+  ['rgbHex','rgbSub'].forEach(id=>document.getElementById(id).style.color=lum2>130?'#0a0a0f':'white');
+  const ch=rgbToHex(255-r,255-g,255-b);
+  document.getElementById('csw').style.background=ch;
+  document.getElementById('chex').textContent=ch.toUpperCase();
+}
+['rs','gs','bs'].forEach(id=>document.getElementById(id).addEventListener('input',updateRGB));
+updateRGB();
+
+/* ── HSB STUDIO ─────────────────────────────────────────── */
+function updateHSB(){
+  const h=+document.getElementById('hueSlider').value;
+  const s=+document.getElementById('satSlider').value;
+  const bv=+document.getElementById('briSlider').value;
+  const l=+document.getElementById('litSlider').value;
+  const val=+document.getElementById('valSlider').value;
+
+  document.getElementById('hueVal').textContent=h+'°';
+  document.getElementById('satVal').textContent=s+'%';
+  document.getElementById('briVal').textContent=bv+'%';
+  document.getElementById('litVal').textContent=l+'%';
+  document.getElementById('valSliderVal').textContent=val+'%';
+
+  // Update gradient bars
+  document.getElementById('hueBar').style.background=
+    'linear-gradient(to right,hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),hsl(90,100%,50%),hsl(120,100%,50%),hsl(150,100%,50%),hsl(180,100%,50%),hsl(210,100%,50%),hsl(240,100%,50%),hsl(270,100%,50%),hsl(300,100%,50%),hsl(330,100%,50%),hsl(360,100%,50%))';
+  document.getElementById('satBar').style.background=`linear-gradient(to right,hsl(${h},0%,50%),hsl(${h},100%,50%))`;
+  document.getElementById('briBar').style.background=`linear-gradient(to right,#000,${hsbToHex(h,Math.max(s,60),100)})`;
+  document.getElementById('litBar').style.background=`linear-gradient(to right,#000,hsl(${h},100%,50%),#fff)`;
+  document.getElementById('valBar').style.background=`linear-gradient(to right,${hsbToHex(h,s,bv)},#000)`;
+
+  // Value swatch — mix pure color with black by reducing brightness
+  const valuedBri=Math.round(bv*(1-val/100));
+  const valHex=hsbToHex(h,s,Math.max(0,valuedBri));
+  const valSwatch=document.getElementById('valSwatch');
+  valSwatch.style.background=valHex;
+  document.getElementById('valSwatchHex').textContent=valHex.toUpperCase();
+  const [vr,vg,vb]=hexToRgb(valHex);
+  const vlm=0.299*vr+0.587*vg+0.114*vb;
+  document.getElementById('valSwatchHex').style.color=vlm>140?'#0a0a0f':'#fff';
+  document.getElementById('valSwatchDesc').style.color=vlm>140?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.5)';
+  document.getElementById('valSwatchDesc').textContent=`Value: ${val}% black mixed → B:${valuedBri}%`;
+  // Value steps row
+  const vs=document.getElementById('valSteps'); vs.innerHTML='';
+  [0,20,40,60,80,100].forEach(vv=>{
+    const stepBri=Math.round(bv*(1-vv/100));
+    const hex=hsbToHex(h,s,Math.max(0,stepBri));
+    const d=document.createElement('div');
+    d.style.cssText=`flex:1;height:36px;border-radius:7px;background:${hex};border:1px solid rgba(255,255,255,0.07);cursor:pointer;position:relative;`;
+    if(Math.abs(vv-val)<12){d.style.outline='2px solid white';d.style.outlineOffset='2px';}
+    const lbl=document.createElement('div');
+    lbl.style.cssText='position:absolute;bottom:-1.1rem;left:50%;transform:translateX(-50%);font-size:0.56rem;color:var(--muted);white-space:nowrap;';
+    lbl.textContent=vv+'%';
+    d.appendChild(lbl); vs.appendChild(d);
+  });
+
+  // Main swatch uses HSB (Hue + Saturation + Brightness)
+  const mainHex=hsbToHex(h,s,bv);
+  const swatch=document.getElementById('hsbSwatch');
+  swatch.style.background=mainHex;
+  document.getElementById('hsbHex').textContent=mainHex.toUpperCase();
+  const [mr,mg,mb]=hexToRgb(mainHex);
+  const lm=0.299*mr+0.587*mg+0.114*mb;
+  document.getElementById('hsbHex').style.color=lm>140?'#0a0a0f':'#fff';
+  document.getElementById('hsbVals').style.color=lm>140?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.5)';
+  document.getElementById('hsbVals').textContent=`H:${h}° S:${s}% B:${bv}% | ${mainHex.toUpperCase()}`;
+
+  // Lightness (HSL) live preview swatch — uses the LIGHTNESS slider value
+  const litHex = hslToHex(h, s, l);
+  const litSwatch = document.getElementById('litSwatch');
+  litSwatch.style.background = litHex;
+  document.getElementById('litSwatchHex').textContent = litHex.toUpperCase();
+  const [lr2,lg2,lb2] = hexToRgb(litHex);
+  const lm2 = 0.299*lr2 + 0.587*lg2 + 0.114*lb2;
+  document.getElementById('litSwatchHex').style.color = lm2>140 ? '#0a0a0f' : '#fff';
+  document.getElementById('litSwatchVals').style.color = lm2>140 ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+  document.getElementById('litSwatchVals').textContent = `HSL — H:${h}° S:${s}% L:${l}%`;
+
+  // Saturation steps
+  const ss=document.getElementById('satSteps'); ss.innerHTML='';
+  [0,20,40,60,80,100].forEach(sv=>{
+    const hex=hsbToHex(h,sv,bv);
+    const d=document.createElement('div'); d.className='step-swatch'; d.style.background=hex;
+    const lbl=document.createElement('div'); lbl.className='step-pct'; lbl.textContent=sv+'%';
+    d.appendChild(lbl); ss.appendChild(d);
+  });
+
+  // Brightness steps
+  const bs=document.getElementById('briSteps'); bs.innerHTML='';
+  [0,20,40,60,80,100].forEach(bv2=>{
+    const hex=hsbToHex(h,s,bv2);
+    const d=document.createElement('div'); d.className='step-swatch'; d.style.background=hex;
+    const lbl=document.createElement('div'); lbl.className='step-pct'; lbl.textContent=bv2+'%';
+    d.appendChild(lbl); bs.appendChild(d);
+  });
+
+  // Lightness steps (HSL) — uses current hue and saturation, varies lightness
+  const ls=document.getElementById('litSteps'); ls.innerHTML='';
+  [0,20,40,60,80,100].forEach(lv=>{
+    const hex=hslToHex(h,s,lv);
+    const d=document.createElement('div'); d.className='step-swatch'; d.style.background=hex;
+    if(Math.abs(lv-l)<12) { d.style.outline='2px solid white'; d.style.outlineOffset='2px'; d.style.zIndex='5'; }
+    const lbl=document.createElement('div'); lbl.className='step-pct'; lbl.textContent=lv+'%';
+    d.appendChild(lbl); ls.appendChild(d);
+  });
+}
+
+['hueSlider','satSlider','briSlider','litSlider','valSlider'].forEach(id=>document.getElementById(id).addEventListener('input',updateHSB));
+updateHSB();
+
+/* ── CONTRAST ───────────────────────────────────────────── */
+function cRatio(a,b){ const la=luminance(a),lb=luminance(b),hi=Math.max(la,lb),lo=Math.min(la,lb); return (hi+0.05)/(lo+0.05); }
+function updateContrast(){
+  const fg=document.getElementById('th').value, bg=document.getElementById('bh').value;
+  if(!/^#[0-9a-f]{6}$/i.test(fg)||!/^#[0-9a-f]{6}$/i.test(bg)) return;
+  document.getElementById('ci').style.color=fg;
+  document.getElementById('ci').style.background=bg;
+  const ratio=cRatio(fg,bg);
+  document.getElementById('cr').textContent=ratio.toFixed(2)+':1';
+  const cb=document.getElementById('cb'); cb.innerHTML='';
+  [{l:'AA Normal',p:ratio>=4.5},{l:'AA Large',p:ratio>=3},{l:'AAA Normal',p:ratio>=7},{l:'AAA Large',p:ratio>=4.5}]
+    .forEach(c=>{ const b=document.createElement('div'); b.className='badge '+(c.p?'pass':'fail'); b.textContent=(c.p?'✓ ':'✗ ')+c.l; cb.appendChild(b); });
+}
+document.getElementById('tc').addEventListener('input',e=>{ document.getElementById('th').value=e.target.value; updateContrast(); });
+document.getElementById('bc').addEventListener('input',e=>{ document.getElementById('bh').value=e.target.value; updateContrast(); });
+document.getElementById('th').addEventListener('input',e=>{ if(/^#[0-9a-f]{6}$/i.test(e.target.value)){ document.getElementById('tc').value=e.target.value; updateContrast(); } });
+document.getElementById('bh').addEventListener('input',e=>{ if(/^#[0-9a-f]{6}$/i.test(e.target.value)){ document.getElementById('bc').value=e.target.value; updateContrast(); } });
+updateContrast();
+
+/* ── PSYCHOLOGY ─────────────────────────────────────────── */
+const PSYCH=[
+  {name:'Red',   hex:'#E63946',bg:'rgba(230,57,70,0.1)',  mood:'Energy, passion, urgency',       uses:'CTAs, food brands, warnings'},
+  {name:'Orange',hex:'#FF9A3C',bg:'rgba(255,154,60,0.1)', mood:'Creativity, warmth, enthusiasm', uses:'Youth brands, action prompts'},
+  {name:'Yellow',hex:'#FFBE0B',bg:'rgba(255,190,11,0.1)', mood:'Optimism, clarity, warmth',      uses:'Highlights, discount labels'},
+  {name:'Green', hex:'#2DC653',bg:'rgba(45,198,83,0.1)',  mood:'Growth, health, balance',        uses:'Finance, eco, wellness'},
+  {name:'Blue',  hex:'#1A8FD1',bg:'rgba(26,143,209,0.1)', mood:'Trust, calm, professionalism',   uses:'Banks, tech, healthcare'},
+  {name:'Violet',hex:'#7B2FBE',bg:'rgba(123,47,190,0.1)', mood:'Luxury, creativity, mystery',    uses:'Beauty, AI, premium brands'},
+  {name:'Pink',  hex:'#FF4D8D',bg:'rgba(255,77,141,0.1)', mood:'Playfulness, romance, softness', uses:'Fashion, beauty, children'},
+  {name:'Black', hex:'#222',   bg:'rgba(255,255,255,0.04)',mood:'Sophistication, power, elegance',uses:'Luxury fashion, high-end tech'},
+];
+const psychG=document.getElementById('psychGrid');
+PSYCH.forEach(c=>{
+  const card=document.createElement('div'); card.className='psych-card';
+  card.style.background=c.bg; card.style.borderColor=c.hex+'44';
+  card.addEventListener('mouseenter',()=>{ card.style.boxShadow=`0 8px 32px -8px ${c.hex}88`; card.style.borderColor=c.hex+'aa'; });
+  card.addEventListener('mouseleave',()=>{ card.style.boxShadow=''; card.style.borderColor=c.hex+'44'; });
+  card.innerHTML=`<div class="psych-dot" style="background:${c.hex};box-shadow:0 0 14px ${c.hex}88"></div><div class="psych-name">${c.name}</div><div class="psych-mood">${c.mood}</div><div class="psych-uses">Used in: ${c.uses}</div>`;
+  psychG.appendChild(card);
+});
+/* ── COLOR VALUES (Shades / Tints / Tones) ──────────────── */
+function buildValueStrips(){
+  const h=+document.getElementById('valHue').value;
+  document.getElementById('valHueSwatch').style.background=`hsl(${h},100%,50%)`;
+  document.getElementById('valHueDeg').textContent=h+'°';
+  const shade=document.getElementById('shadesStrip'); shade.innerHTML='';
+  const tint=document.getElementById('tintsStrip');   tint.innerHTML='';
+  const tone=document.getElementById('tonesStrip');   tone.innerHTML='';
+  const steps=8;
+  for(let i=0;i<steps;i++){
+    const t=i/(steps-1);
+    // Shade: mix with black — lightness goes from 50% down to 5%
+    const sL=Math.round(50-t*45);
+    const ds=document.createElement('div');
+    ds.style.background=`hsl(${h},100%,${sL}%)`;
+    ds.title=`hsl(${h},100%,${sL}%)`;
+    shade.appendChild(ds);
+    // Tint: mix with white — lightness goes from 50% up to 97%
+    const tiL=Math.round(50+t*47);
+    const dt=document.createElement('div');
+    dt.style.background=`hsl(${h},100%,${tiL}%)`;
+    dt.title=`hsl(${h},100%,${tiL}%)`;
+    tint.appendChild(dt);
+    // Tone: mix with gray — saturation drops from 100% to 10%
+    const toS=Math.round(100-t*90);
+    const dtn=document.createElement('div');
+    dtn.style.background=`hsl(${h},${toS}%,50%)`;
+    dtn.title=`hsl(${h},${toS}%,50%)`;
+    tone.appendChild(dtn);
+  }
+}
+document.getElementById('valHue').addEventListener('input',buildValueStrips);
+buildValueStrips();
+
+/* ── PRIMARY / SECONDARY / TERTIARY (Interactive Drag) ───── */
+const MIX_DATA={
+  primary:{title:'The 3 Primary Colors',desc:'Primary colors are the foundation of all color. They cannot be created by mixing. In RYB (art/design model): Red, Yellow, Blue. Drag the circles together to mix them live.',colors:[{name:'Red',hex:'#EE1111'},{name:'Yellow',hex:'#FFE600'},{name:'Blue',hex:'#1155EE'}]},
+  secondary:{title:'The 3 Secondary Colors',desc:'Secondary colors are made by mixing two primaries equally. Red + Yellow = Orange. Yellow + Blue = Green. Blue + Red = Violet.',colors:[{name:'Orange',hex:'#FF6600',from:'Red + Yellow'},{name:'Green',hex:'#22AA33',from:'Yellow + Blue'},{name:'Violet',hex:'#8822CC',from:'Blue + Red'}]},
+  tertiary:{title:'The 6 Tertiary Colors',desc:'Tertiary colors fill the gaps — one primary mixed with one adjacent secondary. They give names like Red-Orange, Blue-Green, Yellow-Green.',colors:[{name:'Red-Orange',hex:'#FF3300',from:'Red+Orange'},{name:'Yellow-Orange',hex:'#FFAA00',from:'Yellow+Orange'},{name:'Yellow-Green',hex:'#88CC00',from:'Yellow+Green'},{name:'Blue-Green',hex:'#008866',from:'Blue+Green'},{name:'Blue-Violet',hex:'#4433CC',from:'Blue+Violet'},{name:'Red-Violet',hex:'#CC1166',from:'Red+Violet'}]}
+};
+const mixCircles=[
+  {x:150,y:70,r:44,color:'#EE1111',name:'Red'},
+  {x:80,y:210,r:44,color:'#FFE600',name:'Yellow'},
+  {x:220,y:210,r:44,color:'#1155EE',name:'Blue'}
+];
+const MIX_TABLE={'Red+Yellow':{name:'Orange',hex:'#FF6600'},'Yellow+Red':{name:'Orange',hex:'#FF6600'},'Yellow+Blue':{name:'Green',hex:'#22AA33'},'Blue+Yellow':{name:'Green',hex:'#22AA33'},'Red+Blue':{name:'Violet',hex:'#8822CC'},'Blue+Red':{name:'Violet',hex:'#8822CC'}};
+let mixDragIdx=-1,mixDragOffX=0,mixDragOffY=0,currentMix='primary';
+function circlesOverlap(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)<(a.r+b.r)*0.72;}
+function drawPrimaryInteractive(){
+  const cv=document.getElementById('mixCanvas');
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,300,300); ctx.fillStyle='#13131d'; ctx.fillRect(0,0,300,300);
+  const o01=circlesOverlap(mixCircles[0],mixCircles[1]);
+  const o12=circlesOverlap(mixCircles[1],mixCircles[2]);
+  const o02=circlesOverlap(mixCircles[0],mixCircles[2]);
+  const oAll=o01&&o12&&o02;
+  const drawGlow=(a,b,hex)=>{if(!circlesOverlap(a,b))return;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const g=ctx.createRadialGradient(mx,my,0,mx,my,55);g.addColorStop(0,hex+'bb');g.addColorStop(1,'transparent');ctx.beginPath();ctx.arc(mx,my,55,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();};
+  drawGlow(mixCircles[0],mixCircles[1],'#FF6600');
+  drawGlow(mixCircles[1],mixCircles[2],'#22AA33');
+  drawGlow(mixCircles[0],mixCircles[2],'#8822CC');
+  ctx.save(); ctx.globalCompositeOperation='screen';
+  mixCircles.forEach(c=>{const g=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);g.addColorStop(0,c.color+'ff');g.addColorStop(0.65,c.color+'cc');g.addColorStop(1,c.color+'33');ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();});
+  ctx.restore();
+  mixCircles.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='white';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=7;ctx.fillText(c.name,c.x,c.y);ctx.shadowBlur=0;});
+  const olbl=(a,b,name,col)=>{if(!circlesOverlap(a,b))return;ctx.fillStyle=col;ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.95)';ctx.shadowBlur=9;ctx.fillText(name,(a.x+b.x)/2,(a.y+b.y)/2);ctx.shadowBlur=0;};
+  olbl(mixCircles[0],mixCircles[1],'Orange','#ffcc88');
+  olbl(mixCircles[1],mixCircles[2],'Green','#aaffaa');
+  olbl(mixCircles[0],mixCircles[2],'Violet','#ddaaff');
+  if(oAll){const cx=(mixCircles[0].x+mixCircles[1].x+mixCircles[2].x)/3,cy=(mixCircles[0].y+mixCircles[1].y+mixCircles[2].y)/3;ctx.fillStyle='#e8c9aa';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Brown',cx,cy);}
+  const rb=document.getElementById('mixResultBox');
+  const pairs=[];
+  if(o01)pairs.push('Red+Yellow'); if(o12)pairs.push('Yellow+Blue'); if(o02)pairs.push('Red+Blue');
+  if(oAll){rb.style.display='block';document.getElementById('mixResultSwatch').style.background='#6B3A2A';document.getElementById('mixResultName').textContent='→ Brown (all 3 mixed)';document.getElementById('mixResultHex').textContent='#6B3A2A';}
+  else if(pairs.length){rb.style.display='block';const m=MIX_TABLE[pairs[0]];document.getElementById('mixResultSwatch').style.background=m.hex;document.getElementById('mixResultName').textContent='→ '+m.name;document.getElementById('mixResultHex').textContent=m.hex.toUpperCase();}
+  else{rb.style.display='none';}
+}
+function drawMixCanvas(type){
+  const cv=document.getElementById('mixCanvas');const ctx=cv.getContext('2d');
+  const hint=document.getElementById('mixDragHint');
+  if(type==='primary'){hint.style.display='block';cv.style.cursor='grab';drawPrimaryInteractive();return;}
+  hint.style.display='none';cv.style.cursor='default';
+  ctx.clearRect(0,0,300,300);ctx.fillStyle='#13131d';ctx.fillRect(0,0,300,300);
+  if(type==='secondary'){
+    const pp=[[80,55],[220,55],[150,240]],pc=['#EE1111','#FFE600','#1155EE'],pn=['Red','Yellow','Blue'];
+    const sp=[[150,100],[215,175],[85,175]],sc=['#FF6600','#22AA33','#8822CC'],sn=['Orange','Green','Violet'],sf=['R+Y','Y+B','B+R'];
+    [[0,1,0],[1,2,1],[2,0,2]].forEach(([a,b,si])=>{
+      ctx.beginPath();ctx.moveTo(pp[a][0],pp[a][1]);ctx.lineTo(sp[si][0],sp[si][1]);ctx.strokeStyle=sc[si]+'55';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(pp[b][0],pp[b][1]);ctx.lineTo(sp[si][0],sp[si][1]);ctx.strokeStyle=sc[si]+'55';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+    });
+    pp.forEach(([x,y],i)=>{ctx.beginPath();ctx.arc(x,y,30,0,Math.PI*2);ctx.fillStyle=pc[i]+'cc';ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='white';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=5;ctx.fillText(pn[i],x,y);ctx.shadowBlur=0;});
+    sp.forEach(([x,y],i)=>{ctx.beginPath();ctx.arc(x,y,36,0,Math.PI*2);ctx.fillStyle=sc[i]+'dd';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='white';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,0.9)';ctx.shadowBlur=6;ctx.fillText(sn[i],x,y-6);ctx.font='9px sans-serif';ctx.fillStyle='rgba(255,255,255,0.65)';ctx.fillText(sf[i],x,y+8);ctx.shadowBlur=0;});
+    ctx.fillStyle='rgba(232,255,71,0.7)';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('SECONDARY = Primary + Primary',150,290);
+  } else {
+    const N2=12,SEG2=(2*Math.PI)/N2;
+    const TC=['#FFE600','#FFAA00','#FF6600','#FF3300','#EE1111','#CC1166','#8822CC','#4433CC','#1155EE','#008866','#22AA33','#88CC00'];
+    const TT=['P','T','S','T','P','T','S','T','P','T','S','T'];
+    for(let i=0;i<N2;i++){const a0=-Math.PI/2-SEG2/2+i*SEG2,a1=a0+SEG2;ctx.beginPath();ctx.moveTo(150,150);ctx.arc(150,150,128,a0,a1);ctx.closePath();ctx.fillStyle=TC[i];ctx.fill();ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=1;ctx.stroke();const mid=a0+SEG2/2,tx=150+105*Math.cos(mid),ty=150+105*Math.sin(mid);ctx.fillStyle='rgba(0,0,0,0.75)';ctx.font=`bold ${TT[i]==='P'?11:9}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(TT[i],tx,ty);}
+    ctx.beginPath();ctx.arc(150,150,46,0,Math.PI*2);ctx.fillStyle='#13131d';ctx.fill();
+    ctx.fillStyle='rgba(232,255,71,0.9)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('P=Primary',150,141);ctx.fillText('S=Secondary',150,153);ctx.fillText('T=Tertiary',150,165);
+  }
+}
+const mixCv=document.getElementById('mixCanvas');
+function getMixPos(e){const rect=mixCv.getBoundingClientRect(),scx=300/rect.width,scy=300/rect.height,cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY;return{x:(cx-rect.left)*scx,y:(cy-rect.top)*scy};}
+mixCv.addEventListener('mousedown',e=>{if(currentMix!=='primary')return;const{x,y}=getMixPos(e);for(let i=mixCircles.length-1;i>=0;i--){const c=mixCircles[i];if(Math.sqrt((x-c.x)**2+(y-c.y)**2)<c.r){mixDragIdx=i;mixDragOffX=x-c.x;mixDragOffY=y-c.y;mixCv.style.cursor='grabbing';break;}}});
+window.addEventListener('mousemove',e=>{if(mixDragIdx<0||currentMix!=='primary')return;const{x,y}=getMixPos(e);mixCircles[mixDragIdx].x=Math.max(44,Math.min(256,x-mixDragOffX));mixCircles[mixDragIdx].y=Math.max(44,Math.min(256,y-mixDragOffY));drawPrimaryInteractive();});
+window.addEventListener('mouseup',()=>{mixDragIdx=-1;if(currentMix==='primary'&&document.getElementById('mixCanvas'))document.getElementById('mixCanvas').style.cursor='grab';});
+mixCv.addEventListener('touchstart',e=>{e.preventDefault();if(currentMix!=='primary')return;const{x,y}=getMixPos(e);for(let i=mixCircles.length-1;i>=0;i--){const c=mixCircles[i];if(Math.sqrt((x-c.x)**2+(y-c.y)**2)<c.r){mixDragIdx=i;mixDragOffX=x-c.x;mixDragOffY=y-c.y;break;}}},{passive:false});
+mixCv.addEventListener('touchmove',e=>{e.preventDefault();if(mixDragIdx<0||currentMix!=='primary')return;const{x,y}=getMixPos(e);mixCircles[mixDragIdx].x=Math.max(44,Math.min(256,x-mixDragOffX));mixCircles[mixDragIdx].y=Math.max(44,Math.min(256,y-mixDragOffY));drawPrimaryInteractive();},{passive:false});
+mixCv.addEventListener('touchend',()=>{mixDragIdx=-1;});
+function setMixTab(type){
+  currentMix=type;
+  document.querySelectorAll('.mix-tab').forEach(t=>t.classList.toggle('active',t.dataset.mix===type));
+  const d=MIX_DATA[type];
+  document.getElementById('mixTitle').textContent=d.title;
+  document.getElementById('mixDesc').textContent=d.desc;
+  const mc=document.getElementById('mixColors');mc.innerHTML='';
+  d.colors.forEach(c=>{const chip=document.createElement('div');chip.className='mix-color-chip';chip.innerHTML=`<div class="mix-color-dot" style="background:${c.hex}"></div><span>${c.name}${c.from?`<span style="color:var(--muted);font-size:0.68rem;"> (${c.from})</span>`:''}</span>`;mc.appendChild(chip);});
+  if(type==='primary')document.getElementById('mixResultBox').style.display='none';
+  drawMixCanvas(type);
+}
+document.querySelectorAll('.mix-tab').forEach(t=>t.addEventListener('click',()=>setMixTab(t.dataset.mix)));
+setMixTab('primary');
+
+/* ── CMYK MIXER ──────────────────────────────────────────── */
+function updateCMYK(){
+  const c=+document.getElementById('cSlider').value/100;
+  const m=+document.getElementById('mSlider').value/100;
+  const y=+document.getElementById('ySlider').value/100;
+  const k=+document.getElementById('kSlider').value/100;
+  document.getElementById('cVal').textContent=Math.round(c*100);
+  document.getElementById('mVal').textContent=Math.round(m*100);
+  document.getElementById('yVal').textContent=Math.round(y*100);
+  document.getElementById('kVal').textContent=Math.round(k*100);
+  const r=Math.round(255*(1-c)*(1-k));
+  const g=Math.round(255*(1-m)*(1-k));
+  const b=Math.round(255*(1-y)*(1-k));
+  const hex=rgbToHex(r,g,b);
+  document.getElementById('cmykPreview').style.background=hex;
+  document.getElementById('cmykHex').textContent=hex.toUpperCase();
+}
+['cSlider','mSlider','ySlider','kSlider'].forEach(id=>document.getElementById(id).addEventListener('input',updateCMYK));
+updateCMYK();
+
+/* ── BLACK & WHITE CANVAS ────────────────────────────────── */
+function drawBW(){
+  const cv=document.getElementById('bwCanvas');
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const bri=(+document.getElementById('bwBri').value-50)/50; // -1 to 1
+  const con=(+document.getElementById('bwCon').value)/100;   // 0 to 1
+  const grain=+document.getElementById('bwGrain').value/100;
+  document.getElementById('bwBriVal').textContent=Math.round(+document.getElementById('bwBri').value)+'%';
+  document.getElementById('bwConVal').textContent=Math.round(+document.getElementById('bwCon').value)+'%';
+  document.getElementById('bwGrainVal').textContent=Math.round(grain*100)+'%';
+  ctx.clearRect(0,0,W,H);
+  // Draw a simple geometric scene in grayscale
+  const scenes=[
+    // Sky gradient
+    ()=>{ const g=ctx.createLinearGradient(0,0,0,H*0.55); g.addColorStop(0,'#e8e8e8'); g.addColorStop(1,'#b0b0b0'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H*0.55); },
+    // Ground
+    ()=>{ const g=ctx.createLinearGradient(0,H*0.55,0,H); g.addColorStop(0,'#888'); g.addColorStop(1,'#555'); ctx.fillStyle=g; ctx.fillRect(0,H*0.55,W,H*0.45); },
+    // Sun
+    ()=>{ ctx.beginPath(); ctx.arc(W*0.75,H*0.2,35,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); },
+    // Mountains
+    ()=>{ ctx.beginPath(); ctx.moveTo(0,H*0.55); ctx.lineTo(W*0.25,H*0.2); ctx.lineTo(W*0.45,H*0.42); ctx.lineTo(W*0.6,H*0.18); ctx.lineTo(W*0.8,H*0.38); ctx.lineTo(W,H*0.28); ctx.lineTo(W,H*0.55); ctx.closePath(); const g=ctx.createLinearGradient(0,H*0.18,0,H*0.55); g.addColorStop(0,'#ddd'); g.addColorStop(1,'#999'); ctx.fillStyle=g; ctx.fill(); },
+    // Trees
+    ()=>{ [W*0.1,W*0.2,W*0.85,W*0.9].forEach(x=>{ ctx.fillStyle='#333'; ctx.fillRect(x-4,H*0.42,8,H*0.2); ctx.beginPath(); ctx.moveTo(x,H*0.28); ctx.lineTo(x-18,H*0.46); ctx.lineTo(x+18,H*0.46); ctx.closePath(); ctx.fillStyle='#555'; ctx.fill(); }); },
+    // House
+    ()=>{ ctx.fillStyle='#777'; ctx.fillRect(W*0.38,H*0.44,W*0.14,H*0.13); ctx.beginPath(); ctx.moveTo(W*0.35,H*0.44); ctx.lineTo(W*0.45,H*0.3); ctx.lineTo(W*0.55,H*0.44); ctx.closePath(); ctx.fillStyle='#555'; ctx.fill(); ctx.fillStyle='#333'; ctx.fillRect(W*0.43,H*0.5,W*0.04,H*0.07); }
+  ];
+  scenes.forEach(fn=>fn());
+  // Apply brightness and contrast via compositing
+  const contrastFactor=con*2; // 0-2
+  const brightnessOffset=bri*120;
+  const imgData=ctx.getImageData(0,0,W,H);
+  const data=imgData.data;
+  for(let i=0;i<data.length;i+=4){
+    let v=(data[i]+data[i+1]+data[i+2])/3; // grayscale
+    v=(v-128)*contrastFactor+128+brightnessOffset; // contrast + brightness
+    if(grain>0) v+=((Math.random()-0.5)*grain*120); // grain
+    v=Math.max(0,Math.min(255,v));
+    data[i]=data[i+1]=data[i+2]=v;
+  }
+  ctx.putImageData(imgData,0,0);
+}
+document.getElementById('bwBri').addEventListener('input',drawBW);
+document.getElementById('bwCon').addEventListener('input',drawBW);
+document.getElementById('bwGrain').addEventListener('input',drawBW);
+document.querySelectorAll('.bw-preset').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.bw-preset').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const presets={normal:[50,50,0],highcontrast:[50,90,0],lowkey:[20,65,0],highkey:[78,40,0],film:[48,60,55]};
+  const [br,co,gr]=presets[btn.dataset.bw];
+  document.getElementById('bwBri').value=br;
+  document.getElementById('bwCon').value=co;
+  document.getElementById('bwGrain').value=gr;
+  drawBW();
+}));
+drawBW();
+
+/* ── PALETTE GENERATOR ───────────────────────────────────── */
+let savedPalettes=[];
+let currentGenColors=[];
+function hueToHex(h,s,l){ return hslToHex(h,s,l); }
+function generatePalette(){
+  const baseHex=document.getElementById('genBase').value;
+  const scheme=document.getElementById('genScheme').value;
+  const [r,g,b]=hexToRgb(baseHex);
+  // Convert to HSL
+  const rn=r/255,gn=g/255,bn=b/255;
+  const max=Math.max(rn,gn,bn),min=Math.min(rn,gn,bn),d=max-min;
+  let h=0,s=0,l=(max+min)/2;
+  if(d>0){
+    s=d/(1-Math.abs(2*l-1));
+    if(max===rn) h=((gn-bn)/d+6)%6*60;
+    else if(max===gn) h=((bn-rn)/d+2)*60;
+    else h=((rn-gn)/d+4)*60;
+  }
+  s=Math.round(s*100); l=Math.round(l*100); h=Math.round(h);
+  let hues=[];
+  if(scheme==='complementary') hues=[h,h+180,(h+180+30)%360,(h+180-30+360)%360,(h+20)%360];
+  else if(scheme==='analogous') hues=[h,(h-30+360)%360,(h+30)%360,(h-60+360)%360,(h+60)%360];
+  else if(scheme==='triadic') hues=[h,(h+120)%360,(h+240)%360,(h+40)%360,(h+200)%360];
+  else if(scheme==='split') hues=[h,(h+150)%360,(h+210)%360,(h+180)%360,(h+30)%360];
+  else if(scheme==='monochromatic') hues=[h,h,h,h,h];
+  else hues=[h,(h+137)%360,(h+251)%360,(h+98)%360,(h+196)%360];
+  const lightnesses=scheme==='monochromatic'?[20,35,50,65,80]:[l,l,l,Math.min(l+15,90),Math.max(l-15,10)];
+  const sats=scheme==='monochromatic'?[s,s,s,s,s]:[s,Math.min(s+10,100),s,s,s];
+  currentGenColors=hues.map((h2,i)=>hslToHex(h2,sats[i]||s,lightnesses[i]||l));
+  renderGenPalette(currentGenColors);
+}
+function renderGenPalette(colors){
+  const el=document.getElementById('genPalette'); el.innerHTML='';
+  colors.forEach(hex=>{
+    const sw=document.createElement('div'); sw.className='gen-swatch'; sw.style.background=hex;
+    const lbl=document.createElement('div'); lbl.className='gen-swatch-label'; lbl.textContent=hex.toUpperCase();
+    sw.appendChild(lbl);
+    sw.addEventListener('click',()=>{ navigator.clipboard.writeText(hex).catch(()=>{}); lbl.textContent='Copied!'; lbl.style.opacity='1'; setTimeout(()=>{ lbl.textContent=hex.toUpperCase(); lbl.style.opacity=''; },1200); });
+    el.appendChild(sw);
+  });
+}
+function savePalette(){
+  if(!currentGenColors.length) return;
+  savedPalettes.push([...currentGenColors]);
+  const saved=document.getElementById('genSaved'); saved.innerHTML='';
+  savedPalettes.forEach((pal,i)=>{
+    const card=document.createElement('div'); card.className='gen-saved-card';
+    const strip=document.createElement('div'); strip.className='gen-saved-strip';
+    pal.forEach(hex=>{ const d=document.createElement('div'); d.style.background=hex; strip.appendChild(d); });
+    const lbl=document.createElement('div'); lbl.className='gen-saved-label'; lbl.textContent=`Palette ${i+1}`;
+    card.appendChild(strip); card.appendChild(lbl); saved.appendChild(card);
+  });
+}
+generatePalette();
+
+/* ── 60-30-10 RULE ───────────────────────────────────────── */
+function updateRule(){
+  const c60=document.getElementById('rule60').value;
+  const c30=document.getElementById('rule30').value;
+  const c10=document.getElementById('rule10').value;
+  document.getElementById('ruleDom').style.background=c60;
+  document.getElementById('ruleSecond').style.background=c30;
+  document.getElementById('ruleAccent').style.background=c10;
+  document.getElementById('ruleAccent2').style.background=c10;
+  document.getElementById('rule60Preview').style.background=c60;
+  document.getElementById('rule30Preview').style.background=c30;
+  document.getElementById('rule10Preview').style.background=c10;
+  document.getElementById('ri60').style.borderColor=c60+'88';
+  document.getElementById('ri60').style.background=c60+'22';
+  document.getElementById('ri30').style.borderColor=c30+'88';
+  document.getElementById('ri30').style.background=c30+'22';
+  document.getElementById('ri10').style.borderColor=c10+'88';
+  document.getElementById('ri10').style.background=c10+'22';
+}
+['rule60','rule30','rule10'].forEach(id=>document.getElementById(id).addEventListener('input',updateRule));
+updateRule();
+
+/* ── GRADIENTS ───────────────────────────────────────────── */
+let gradType='linear';
+const GRAD_GALLERY=[
+  {name:'Sunset',stops:['#ff6b35','#f7931e','#ffcd3c']},
+  {name:'Ocean',stops:['#1a6b8a','#0ea5e9','#7dd3fc']},
+  {name:'Aurora',stops:['#0f0c29','#302b63','#24243e']},
+  {name:'Neon',stops:['#e8ff47','#00ffcc','#3366ff']},
+  {name:'Rose',stops:['#ff9a9e','#fecfef','#ffecd2']},
+  {name:'Forest',stops:['#134e5e','#71b280']},
+  {name:'Lava',stops:['#200122','#6f0000','#cc2200']},
+  {name:'Candy',stops:['#fd1d1d','#fcb045','#833ab4']},
+  {name:'Arctic',stops:['#1a2a6c','#b21f1f','#fdbb2d']},
+  {name:'Mint',stops:['#aaffa9','#11ffbd']},
+  {name:'Dusk',stops:['#2c3e50','#3498db','#e74c3c']},
+  {name:'Gold',stops:['#f7971e','#ffd200']},
+];
+function getGradStopColors(){
+  return Array.from(document.querySelectorAll('.grad-stop-swatch')).map(el=>el.value);
+}
+function buildGradCSS(type,colors,angle){
+  const stops=colors.join(', ');
+  if(type==='linear') return `linear-gradient(${angle}deg, ${stops})`;
+  if(type==='radial') return `radial-gradient(circle, ${stops})`;
+  return `conic-gradient(from ${angle}deg, ${stops})`;
+}
+function updateGradient(){
+  const angle=+document.getElementById('gradAngle').value;
+  document.getElementById('gradAngleVal').textContent=angle+'°';
+  const colors=getGradStopColors();
+  const css=buildGradCSS(gradType,colors,angle);
+  document.getElementById('gradPreview').style.background=css;
+  document.getElementById('gradCode').textContent=`background: ${css};`;
+}
+document.querySelectorAll('.grad-type-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.grad-type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  gradType=btn.dataset.gtype;
+  // hide angle row for radial only
+  document.getElementById('gradAngleRow').style.display=gradType==='radial'?'none':'grid';
+  updateGradient();
+}));
+document.getElementById('gradAngle').addEventListener('input',updateGradient);
+document.querySelectorAll('.grad-stop-swatch').forEach(el=>el.addEventListener('input',updateGradient));
+// Build gallery
+const gg=document.getElementById('gradGallery');
+GRAD_GALLERY.forEach(g=>{
+  const angle=135;
+  const css=buildGradCSS('linear',g.stops,angle);
+  const card=document.createElement('div'); card.className='grad-card'; card.style.background=css;
+  const lbl=document.createElement('div'); lbl.className='grad-card-label'; lbl.textContent=g.name;
+  card.appendChild(lbl);
+  card.addEventListener('click',()=>{
+    const stops=document.querySelectorAll('.grad-stop-swatch');
+    g.stops.forEach((c,i)=>{ if(stops[i]) stops[i].value=c; });
+    updateGradient();
+  });
+  gg.appendChild(card);
+});
+updateGradient();
+
+</script>
+</body>
+</html>
