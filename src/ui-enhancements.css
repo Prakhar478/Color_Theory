@@ -1,0 +1,123 @@
+/* ── Smooth scroll globally ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Mouse-tracking orb ──
+   Follows --mouse-x / --mouse-y CSS vars set in main.jsx             */
+.mouse-orb {
+  background: radial-gradient(
+    circle 520px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(232, 255, 71, 0.032) 0%,
+    rgba(123, 47, 190, 0.018) 45%,
+    transparent 75%
+  );
+  will-change: background;
+  transition: background 0.12s linear;
+}
+
+/* ── Smooth button transitions (all buttons site-wide) ── */
+button,
+.scheme-btn,
+.gen-btn,
+.mix-tab,
+.grad-type-btn,
+.bw-preset,
+.htag,
+.gen-swatch {
+  transition:
+    background   0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    color        0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform    0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow   0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity      0.18s ease !important;
+}
+
+button:hover,
+.scheme-btn:hover,
+.gen-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+button:active,
+.scheme-btn:active,
+.gen-btn:active {
+  transform: scale(0.96) !important;
+  transition-duration: 0.08s !important;
+}
+
+/* ── Smooth color pickers ── */
+input[type="color"] {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+input[type="color"]:hover {
+  transform: scale(1.12);
+}
+
+/* ── Section separator glow pulse ── */
+.sep {
+  width: 100%;
+  max-width: 1100px;
+  height: 1px;
+  margin: 0 auto;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.07), transparent);
+  position: relative;
+  overflow: visible;
+}
+.sep::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 40%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(232,255,71,0.18), transparent);
+  animation: sepPulse 4s ease-in-out infinite;
+}
+@keyframes sepPulse {
+  0%, 100% { opacity: 0.3; width: 18%; }
+  50%       { opacity: 1;   width: 52%; }
+}
+
+/* ── Palette swatch hover expand ── */
+.palette-swatch div,
+.gen-swatch,
+.values-strip div {
+  transition: flex 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ── Navbar active link smooth indicator ── */
+.nav-links a {
+  position: relative;
+}
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0; right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: navUnderline 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes navUnderline {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* ── Card hover lifts ── */
+.palette-card,
+.hsb-card,
+.model-card,
+.temp-card,
+.rule-info-card,
+.values-card,
+.psych-card {
+  transition:
+    transform    0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow   0.28s ease,
+    border-color 0.28s ease,
+    background   0.28s ease !important;
+}
