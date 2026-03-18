@@ -1,24 +1,25 @@
 import './App.css';
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import ColorWheel from './components/ColorWheel';
-import PrimaryColors from './components/PrimaryColors';
-import ColorValues from './components/ColorValues';
-import RGBvsCMYK from './components/RGBvsCMYK';
-import RGBMixer from './components/RGBMixer';
-import HSBStudio from './components/HSBStudio';
-import PaletteSection from './components/PaletteSection';
-import ColorTemperature from './components/ColorTemperature';
-import ContrastChecker from './components/ContrastChecker';
-import PaletteGenerator from './components/PaletteGenerator';
-import Rule6030 from './components/Rule6030';
-import Gradients from './components/Gradients';
-import BlackAndWhite from './components/BlackAndWhite';
-import ColorPsychology from './components/ColorPsychology';
-import ColorPreviewPanel from './components/ColorPreviewPanel';
 import ReactiveBackground from './components/ReactiveBackground';
+import ColorPreviewPanel from './components/ColorPreviewPanel';
+
+// Lazy-load every heavy section — only loads when scrolled into view
+const ColorWheel       = lazy(() => import('./components/ColorWheel'));
+const PrimaryColors    = lazy(() => import('./components/PrimaryColors'));
+const ColorValues      = lazy(() => import('./components/ColorValues'));
+const RGBvsCMYK        = lazy(() => import('./components/RGBvsCMYK'));
+const RGBMixer         = lazy(() => import('./components/RGBMixer'));
+const HSBStudio        = lazy(() => import('./components/HSBStudio'));
+const PaletteSection   = lazy(() => import('./components/PaletteSection'));
+const ColorTemperature = lazy(() => import('./components/ColorTemperature'));
+const ContrastChecker  = lazy(() => import('./components/ContrastChecker'));
+const PaletteGenerator = lazy(() => import('./components/PaletteGenerator'));
+const Rule6030         = lazy(() => import('./components/Rule6030'));
+const Gradients        = lazy(() => import('./components/Gradients'));
+const BlackAndWhite    = lazy(() => import('./components/BlackAndWhite'));
+const ColorPsychology  = lazy(() => import('./components/ColorPsychology'));
 
 const SECTION_IDS = [
   'wheel-section','primary-section','values-section','models-section',
@@ -44,42 +45,70 @@ const SECTIONS = [
   { id: 'psychology-section',  C: ColorPsychology },
 ];
 
-// Scroll-triggered fade+slide reveal
+const isMobile = () => window.innerWidth <= 768;
+
+// Section loader placeholder
+function SectionSkeleton() {
+  return (
+    <div style={{
+      height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', letterSpacing: '0.1em',
+    }}>
+      Loading...
+    </div>
+  );
+}
+
+// Scroll-triggered reveal — simplified on mobile (no blur, lighter animation)
 function SectionReveal({ children }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const mobile = isMobile();
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold: 0.05 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setMounted(true);
+          // Small delay so lazy component can load
+          setTimeout(() => setVisible(true), 50);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.04, rootMargin: '100px' }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 50, filter: 'blur(6px)' }}
-      animate={visible
-        ? { opacity: 1, y: 0, filter: 'blur(0px)' }
-        : { opacity: 0, y: 50, filter: 'blur(6px)' }
-      }
-      transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : `translateY(${mobile ? 20 : 40}px)`,
+        // No blur on mobile — GPU expensive
+        filter: mobile ? 'none' : (visible ? 'blur(0px)' : 'blur(4px)'),
+        transition: mobile
+          ? 'opacity 0.4s ease, transform 0.4s ease'
+          : 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease',
+        minHeight: mounted ? 'auto' : '40px',
+      }}
     >
-      {children}
-    </motion.div>
+      {mounted ? children : null}
+    </div>
   );
 }
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('wheel-section');
   const [liveColor, setLiveColor] = useState('#1A8FD1');
+  const mobile = isMobile();
 
-  // Track active section for panel visibility
+  // Track active section
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
@@ -106,11 +135,15 @@ export default function App() {
   return (
     <div style={{ background: '#06060f', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
 
-      {/* Canvas reactive background — full page, always on */}
-      <ReactiveBackground activeSection={activeSection} liveColor={liveColor} />
+      {/* Canvas reactive background — disable on mobile to save GPU */}
+      {!mobile && (
+        <ReactiveBackground activeSection={activeSection} liveColor={liveColor} />
+      )}
 
-      {/* Mouse glow overlay */}
-      <div className="mouse-orb" style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
+      {/* Mouse glow — desktop only */}
+      {!mobile && (
+        <div className="mouse-orb" style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
+      )}
 
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 2 }}>
@@ -121,7 +154,9 @@ export default function App() {
         {SECTIONS.map(({ id, C }, i) => (
           <div key={id}>
             <SectionReveal>
-              <C />
+              <Suspense fallback={<SectionSkeleton />}>
+                <C />
+              </Suspense>
             </SectionReveal>
             {i < SECTIONS.length - 1 && <div className="sep" />}
           </div>
@@ -154,7 +189,8 @@ export default function App() {
         </footer>
       </div>
 
-      <ColorPreviewPanel activeSection={activeSection} />
+      {/* Color preview panel — hide on mobile, takes too much space */}
+      {!mobile && <ColorPreviewPanel activeSection={activeSection} />}
     </div>
   );
 }

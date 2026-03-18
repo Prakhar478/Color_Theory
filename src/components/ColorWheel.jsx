@@ -267,6 +267,23 @@ export default function ColorWheel() {
   const [selectorKey, setSelectorKey] = useState(0);
   const [tiltX,       setTiltX]       = useState(0);
   const [tiltY,       setTiltY]       = useState(0);
+  const [canvasScale, setCanvasScale] = useState(1);
+
+  // Scale wheel to fit mobile screen
+  // The outer dots extend ~28px beyond the 480px canvas on each side
+  // So total visual width = 480 + 56 = 536px. We scale to fit that.
+  useEffect(() => {
+    const updateScale = () => {
+      const VISUAL = SIZE + 56; // dots overflow
+      // Use 88% of screen on mobile so wheel doesn't touch edges
+      const padding = window.innerWidth < 600 ? 40 : 16;
+      const available = Math.min(window.innerWidth - padding, VISUAL);
+      setCanvasScale(Math.min(available / VISUAL, 1));
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   // Selector spring â€” follows cursor while dragging, snaps to seg center otherwise
   const selX = useMotionValue(CX);
@@ -404,7 +421,7 @@ export default function ColorWheel() {
       initial={{ opacity:0, y:20 }}
       animate={{ opacity:1, y:0 }}
       transition={T_SLOW}
-      style={{ textAlign:'center', paddingBottom:'5rem' }}
+      style={{ textAlign:'center', paddingBottom:'5rem', overflowX:'hidden' }}
     >
       {/* PROBLEM 2 FIX: Clash Display heading, Inter body */}
       <div className="section-label" style={{ display:'inline-block' }}>Part 01 &mdash; Color Wheel</div>
@@ -415,11 +432,10 @@ export default function ColorWheel() {
         Hover to preview &middot; Click or drag to select &middot; Choose a harmony scheme
       </p>
 
-      {/* Harmony tabs */}
-      <div style={{ display:'flex',gap:'0.5rem',justifyContent:'center',flexWrap:'wrap',marginBottom:'2rem' }}>
+      {/* Harmony tabs — grid on mobile */}
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:'0.45rem',justifyContent:'center',margin:'0 auto 2rem',maxWidth:'560px',padding:'0 1rem' }}>
         {HARMONY_KEYS.map(k=>(
           <motion.button key={k} onClick={()=>setScheme(k)}
-            whileHover={{ scale:1.04, y:-1 }}
             whileTap={{ scale:0.94 }}
             animate={{
               border:     scheme===k?'1.5px solid #e8ff47'          :'1px solid rgba(255,255,255,0.1)',
@@ -428,16 +444,33 @@ export default function ColorWheel() {
               boxShadow:  scheme===k?'0 0 20px rgba(232,255,71,0.2)':'none',
             }}
             transition={T_FAST}
-            style={{ padding:'0.45rem 1.1rem',borderRadius:'999px',cursor:'pointer',fontSize:'0.75rem',backdropFilter:'blur(12px)',fontFamily:"'Inter',sans-serif",letterSpacing:'0.05em',textTransform:'uppercase' }}
+            style={{ padding:'0.5rem 0.8rem',borderRadius:'10px',cursor:'pointer',fontSize:'0.73rem',fontFamily:"'Inter',sans-serif",letterSpacing:'0.04em',textTransform:'uppercase',textAlign:'center' }}
           >{HARMONY_LABELS[k]}</motion.button>
         ))}
       </div>
 
       {/* Main layout */}
-      <div style={{ display:'flex',gap:'2.5rem',alignItems:'flex-start',justifyContent:'center',flexWrap:'wrap',maxWidth:'1100px',margin:'0 auto' }}>
+      <div style={{ display:'flex',gap:'2rem',alignItems:'flex-start',justifyContent:'center',flexWrap:'wrap',maxWidth:'1100px',margin:'0 auto',padding:'0 0.5rem' }}>
 
-        {/* Wheel */}
-        <div ref={wrapRef} style={{ position:'relative',flexShrink:0,width:SIZE+'px',height:SIZE+'px' }}>
+        {/* Wheel — responsive wrapper scales canvas to fit */}
+        <div style={{
+          width: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          justifyContent: 'center',
+          height: (SIZE * canvasScale) + 'px',
+        }}>
+        <div
+          ref={wrapRef}
+          style={{
+            position: 'relative',
+            width: SIZE + 'px',
+            height: SIZE + 'px',
+            flexShrink: 0,
+            transformOrigin: 'top center',
+            transform: 'scale(' + canvasScale + ')',
+          }}
+        >
 
           {/* Ambient glow */}
           <motion.div
@@ -476,7 +509,7 @@ export default function ColorWheel() {
             ref={canvasRef}
             width={SIZE} height={SIZE}
             animate={{
-              scale:   wheelScale,
+              scale:   1,
               rotateX: tiltX,
               rotateY: tiltY,
             }}
@@ -596,9 +629,10 @@ export default function ColorWheel() {
             </AnimatePresence>
           </motion.div>
         </div>
+        </div>{/* end responsive wheel wrapper */}
 
         {/* Right panel */}
-        <div style={{ flex:'0 0 320px',minWidth:'280px',textAlign:'left',display:'flex',flexDirection:'column',gap:'1rem' }}>
+        <div style={{ flex:'0 0 320px',minWidth:'min(320px,100%)',width:'100%',maxWidth:'480px',textAlign:'left',display:'flex',flexDirection:'column',gap:'1rem',padding:'0 0.5rem' }}>
 
           {/* PROBLEM 6 FIX: stronger glass panels */}
           <motion.div

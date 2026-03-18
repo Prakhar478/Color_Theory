@@ -324,3 +324,234 @@ input[type=color] { width: 48px; height: 48px; border: none; border-radius: 10px
 
 footer { border-top: 1px solid var(--border); padding: 2.5rem 3rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; color: var(--muted); font-size: 0.78rem; }
 @media (max-width: 768px) { footer { padding: 2.5rem 1.2rem; flex-direction: column; text-align: center; } footer > div { align-items: center !important; text-align: center !important; } }
+/* ══════════════════════════════════════════════════════
+   MOBILE OPTIMISATION — Full overhaul for ≤768px
+   ══════════════════════════════════════════════════════ */
+
+/* ── Performance: disable expensive effects on touch ── */
+@media (hover: none) and (pointer: coarse) {
+  /* Kill backdrop-filter — #1 cause of mobile lag */
+  .palette-card,
+  .model-card,
+  .values-card,
+  .hsb-card,
+  .cpicker,
+  .temp-card-body,
+  .psych-card,
+  .chip,
+  .scroll-hint,
+  #scheme-info,
+  .cdot,
+  .wheel-center {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Disable hover transforms on touch — they fire on tap and look glitchy */
+  .palette-card:hover,
+  .model-card:hover,
+  .values-card:hover,
+  .hsb-card:hover,
+  .temp-card:hover,
+  .psych-card:hover,
+  .grad-card:hover,
+  .rule-info-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Disable palette swatch flex animation on touch */
+  .palette-swatch div,
+  .gen-swatch,
+  .gen-palette .gen-swatch {
+    transition: none !important;
+  }
+  .palette-swatch div:hover,
+  .gen-swatch:hover { flex: 1 !important; }
+}
+
+/* ── Layout fixes ── */
+@media (max-width: 768px) {
+
+  /* Nav: keep it single line on mobile */
+  nav {
+    flex-direction: row !important;
+    padding: 0 1rem !important;
+    height: 56px;
+    gap: 0 !important;
+    align-items: center !important;
+    justify-content: space-between;
+  }
+
+  /* Scrollable nav links row */
+  .nav-links {
+    position: fixed;
+    top: 56px;
+    left: 0; right: 0;
+    background: rgba(8,8,14,0.97);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 0.6rem 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 1.2rem;
+    flex-wrap: nowrap !important;
+    z-index: 99;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a { white-space: nowrap; font-size: 0.72rem; }
+
+  /* Hero: fix min-height giant gap */
+  .hero {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 7rem 1.2rem 3rem !important;
+  }
+  .hero h1 { font-size: clamp(2.4rem, 10vw, 3.5rem) !important; }
+  .hero p { font-size: 0.9rem; margin-top: 1rem; }
+  .hero-chips { gap: 0.4rem; margin-top: 1.2rem; }
+  .chip { font-size: 0.68rem; padding: 0.28rem 0.7rem; }
+  .hero-scroll-wrap { margin-top: 2rem; }
+
+  /* Section padding */
+  section { padding: 3rem 1rem !important; }
+
+  /* Section title */
+  .section-title { font-size: clamp(1.6rem, 6vw, 2.4rem) !important; }
+
+  /* Color wheel — scale down */
+  .wheel-wrap {
+    transform: scale(0.82) !important;
+    transform-origin: top center;
+    margin-bottom: -60px !important;
+  }
+  .scheme-btns { gap: 0.4rem; }
+  .scheme-btn { font-size: 0.72rem; padding: 0.4rem 0.9rem; }
+
+  /* All 2-col grids → 1 col */
+  .rgb-mixer,
+  .hsb-layout,
+  .bw-layout,
+  .rule-layout,
+  .contrast-tool,
+  .models-grid,
+  .mix-display { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
+
+  /* 3-col grids → 2 col or 1 col */
+  .values-grid,
+  .hsb-cards { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
+  .rule-info-cards { grid-template-columns: 1fr 1fr 1fr !important; }
+  .psych-grid { grid-template-columns: 1fr 1fr !important; gap: 0.8rem !important; }
+
+  /* Palette grid */
+  .palette-grid { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
+
+  /* RGB preview: make it smaller */
+  .rgb-preview { aspect-ratio: auto !important; height: 120px; }
+  .rgb-hexv { font-size: 1.3rem !important; }
+
+  /* HSB swatch: smaller */
+  .hsb-main-swatch { height: 140px; }
+
+  /* Gradient gallery */
+  .grad-gallery { grid-template-columns: 1fr 1fr !important; gap: 0.75rem !important; }
+
+  /* Gen palette height */
+  .gen-palette { height: 80px; }
+
+  /* Saved palettes */
+  .gen-saved { grid-template-columns: 1fr 1fr !important; }
+
+  /* Temp grid */
+  .temp-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Rule room */
+  .rule-room { height: 220px !important; }
+
+  /* BW layout gap */
+  .bw-layout { gap: 1.5rem !important; }
+
+  /* Contrast tool */
+  .contrast-inner { padding: 1.4rem !important; }
+  .contrast-inner h3 { font-size: 1.1rem !important; }
+
+  /* Footer */
+  footer {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 2rem 1rem !important;
+    gap: 1rem !important;
+  }
+  footer > div { align-items: center !important; text-align: center !important; }
+
+  /* Sep */
+  .sep { margin: 0 1rem; }
+
+  /* Gen controls wrap */
+  .gen-controls { gap: 0.7rem; }
+  .gen-btn { padding: 0.55rem 1rem; font-size: 0.8rem; }
+
+  /* Grad type buttons */
+  .grad-type-btns { gap: 0.4rem; }
+  .grad-type-btn { padding: 0.38rem 0.8rem; font-size: 0.72rem; }
+
+  /* Mix tabs */
+  .mix-tabs { gap: 0.4rem; }
+  .mix-tab { padding: 0.4rem 0.9rem; font-size: 0.75rem; }
+
+  /* Color input */
+  input[type=color] { width: 40px; height: 40px; }
+
+  /* Psych card */
+  .psych-card { padding: 1rem; }
+  .psych-dot { width: 36px; height: 36px; }
+  .psych-name { font-size: 0.9rem; }
+}
+
+/* ── Extra small ≤ 480px ── */
+@media (max-width: 480px) {
+  .hero h1 { font-size: clamp(2rem, 11vw, 3rem) !important; }
+  .values-grid,
+  .hsb-cards,
+  .psych-grid { grid-template-columns: 1fr !important; }
+  .palette-grid { grid-template-columns: 1fr !important; }
+  .gen-saved { grid-template-columns: 1fr !important; }
+  .temp-grid { grid-template-columns: 1fr !important; }
+  .grad-gallery { grid-template-columns: 1fr !important; }
+  .rule-info-cards { grid-template-columns: 1fr !important; }
+  .wheel-wrap {
+    transform: scale(0.68) !important;
+    margin-bottom: -120px !important;
+  }
+  section { padding: 2.5rem 0.8rem !important; }
+  .section-title { font-size: 1.5rem !important; }
+}
+
+/* ── Reduce motion for accessibility + performance ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Color Wheel mobile scaling ── */
+@media (max-width: 560px) {
+  /* Scale the 480px wheel to fit mobile screen */
+  #wheel-section .wheel-responsive-wrap {
+    overflow: hidden;
+  }
+  /* Wrapper div that contains the 480px wheel */
+  #wheel-section > div > div:first-child > div {
+    transform-origin: top center !important;
+  }
+}
+
+/* Harmony buttons grid */
+@media (max-width: 600px) {
+  #wheel-section [style*="grid-template-columns"] {
+    grid-template-columns: 1fr 1fr !important;
+    max-width: 100% !important;
+    padding: 0 0.8rem !important;
+  }
+}

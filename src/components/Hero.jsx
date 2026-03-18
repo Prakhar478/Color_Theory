@@ -1,6 +1,6 @@
 ﻿export default function Hero() {
   return (
-    <div className="hero">
+    <div className="hero" style={{ paddingTop: 'max(5rem, calc(56px + 2rem))' }}>
       <div className="hero-bg"></div>
       <h1>See <em>Color</em><br />Come Alive</h1>
       <p>An interactive journey through Color Theory. Explore color wheels, schemes, RGB, HSB saturation and brightness, and design psychology hands-on.</p>
