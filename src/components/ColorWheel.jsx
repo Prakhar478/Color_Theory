@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import {
   motion, AnimatePresence,
-  useMotionValue, useSpring, useTransform,
+  useMotionValue, useSpring,
 } from 'framer-motion';
 
 // â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -14,8 +14,8 @@ const N     = 12;
 const SEG   = (2 * Math.PI) / N;
 const OFF   = -Math.PI / 2 - SEG / 2;
 const TGAP  = 0.055;
-const DOT_R = R_OUT + 30;
-const DOT_W = 30;
+const DOT_R = R_OUT + 28;
+const DOT_W = 26;
 
 const SEGS = [
   { name:'Yellow',     type:'secondary',    color:'#FFE000', rgb:'255,224,0'   },
@@ -41,12 +41,17 @@ const HARMONIES = {
 const HARMONY_KEYS   = ['none','complementary','analogous','triadic','split'];
 const HARMONY_LABELS = { none:'Free Explore', complementary:'Complementary', analogous:'Analogous', triadic:'Triadic', split:'Split-Comp' };
 const SCHEME_DESC = {
-  none:          'Hover to preview color. Click or drag to select. Choose a harmony scheme.',
+  none:          'Hover to preview. Click or drag to select. Choose a harmony scheme.',
   complementary: '<b style="color:#fff">Complementary</b> &mdash; directly opposite (180&deg;). Maximum contrast.',
   analogous:     '<b style="color:#fff">Analogous</b> &mdash; neighboring hues (&plusmn;30&deg;). Natural harmony.',
   triadic:       '<b style="color:#fff">Triadic</b> &mdash; three hues 120&deg; apart. Vibrant and balanced.',
   split:         '<b style="color:#fff">Split-Complementary</b> &mdash; base + two near-complement neighbors.',
 };
+
+// â”€â”€ Timing tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const T_FAST   = { duration: 0.15, ease: 'easeOut' };
+const T_MEDIUM = { duration: 0.25, ease: 'easeOut' };
+const T_SLOW   = { duration: 0.40, ease: 'easeOut' };
 
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const segMid = i => OFF + (i + 0.5) * SEG;
@@ -56,19 +61,17 @@ function getSegAt(mx, my) {
   const d  = Math.sqrt(dx*dx + dy*dy);
   if (d < R_IN || d > R_OUT) return -1;
   let a = Math.atan2(dy, dx) - OFF;
-  while (a < 0)          a += 2*Math.PI;
-  while (a >= 2*Math.PI) a -= 2*Math.PI;
+  while (a < 0)          a += 2 * Math.PI;
+  while (a >= 2 * Math.PI) a -= 2 * Math.PI;
   return Math.floor(a / SEG) % N;
 }
 
-// Returns true canvas coords + raw client coords + bounding rect
 function toCanvas(e, canvas) {
   const rect = canvas.getBoundingClientRect();
   const src  = e.touches ? e.touches[0] : e;
   return {
     cx:      (src.clientX - rect.left) * (SIZE / rect.width),
     cy:      (src.clientY - rect.top)  * (SIZE / rect.height),
-    // percentage position inside the wrapper div (for ripple / cursor dot)
     px:      ((src.clientX - rect.left) / rect.width)  * 100,
     py:      ((src.clientY - rect.top)  / rect.height) * 100,
     clientX: src.clientX,
@@ -93,6 +96,8 @@ function getShades(hex) {
 }
 
 // â”€â”€ Canvas draw â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// NO cursor dot drawn here â€” removed completely.
+// Hover feedback is purely canvas: larger boost + stronger shadowBlur.
 function drawWheel(ctx, hoverIdx, selIdx, activeArr, pulse) {
   ctx.clearRect(0, 0, SIZE, SIZE);
 
@@ -102,67 +107,76 @@ function drawWheel(ctx, hoverIdx, selIdx, activeArr, pulse) {
     const isAct = !activeArr || activeArr.includes(i);
     const isH   = hoverIdx === i;
     const isS   = selIdx   === i;
-    const boost = isH ? 11+Math.sin(pulse)*2.5 : isS ? 5 : 0;
+
+    // PROBLEM 1 FIX: bigger hover boost so segment itself brightens
+    const boost = isH ? 16 + Math.sin(pulse)*2 : isS ? 6 : 0;
     const oR    = R_OUT + boost;
 
     const grd = ctx.createRadialGradient(CX,CY,R_IN+4,CX,CY,oR-2);
     if (isAct) {
-      grd.addColorStop(0,    seg.color+'99');
-      grd.addColorStop(0.45, seg.color+'cc');
+      // Hover: brighter inner stop
+      grd.addColorStop(0,    isH ? seg.color+'cc' : seg.color+'99');
+      grd.addColorStop(0.45, isH ? seg.color+'ee' : seg.color+'cc');
       grd.addColorStop(1,    seg.color+'ff');
     } else {
       grd.addColorStop(0, seg.color+'0a');
       grd.addColorStop(1, seg.color+'20');
     }
     ctx.beginPath(); ctx.moveTo(CX,CY); ctx.arc(CX,CY,oR,sa,ea); ctx.closePath();
-    ctx.fillStyle=grd; ctx.fill();
+    ctx.fillStyle = grd; ctx.fill();
 
+    // Sheen
     if (isAct) {
-      const mid=segMid(i);
-      const sh=ctx.createLinearGradient(CX+R_IN*Math.cos(mid),CY+R_IN*Math.sin(mid),CX+oR*Math.cos(mid),CY+oR*Math.sin(mid));
-      sh.addColorStop(0,'rgba(255,255,255,0.22)');
-      sh.addColorStop(0.3,'rgba(255,255,255,0.07)');
-      sh.addColorStop(1,'rgba(255,255,255,0)');
+      const mid = segMid(i);
+      const sh  = ctx.createLinearGradient(CX+R_IN*Math.cos(mid),CY+R_IN*Math.sin(mid),CX+oR*Math.cos(mid),CY+oR*Math.sin(mid));
+      sh.addColorStop(0,   'rgba(255,255,255,0.22)');
+      sh.addColorStop(0.3, 'rgba(255,255,255,0.07)');
+      sh.addColorStop(1,   'rgba(255,255,255,0)');
       ctx.beginPath(); ctx.moveTo(CX,CY); ctx.arc(CX,CY,oR,sa,ea); ctx.closePath();
-      ctx.fillStyle=sh; ctx.fill();
+      ctx.fillStyle = sh; ctx.fill();
     }
 
-    if (isH||isS) {
+    // Glow ring â€” PROBLEM 1 FIX: shadowBlur 28 on hover
+    if (isH || isS) {
       ctx.save();
       ctx.beginPath(); ctx.arc(CX,CY,oR-3,sa+0.01,ea-0.01);
-      ctx.strokeStyle=seg.color; ctx.lineWidth=isH?6:3.5;
-      ctx.shadowColor=seg.color; ctx.shadowBlur=isH?20+Math.sin(pulse)*5:12;
+      ctx.strokeStyle = seg.color;
+      ctx.lineWidth   = isH ? 7 : 3.5;
+      ctx.shadowColor = seg.color;
+      ctx.shadowBlur  = isH ? 28 + Math.sin(pulse)*5 : 14;
       ctx.stroke(); ctx.restore();
     }
 
-    if (isAct&&activeArr) {
+    // Harmony outline
+    if (isAct && activeArr) {
       ctx.save();
       ctx.beginPath(); ctx.arc(CX,CY,R_OUT-2,sa+0.01,ea-0.01);
-      ctx.strokeStyle=seg.color+'aa'; ctx.lineWidth=4;
-      ctx.shadowColor=seg.color; ctx.shadowBlur=10;
+      ctx.strokeStyle = seg.color+'aa'; ctx.lineWidth = 4;
+      ctx.shadowColor = seg.color; ctx.shadowBlur = 10;
       ctx.stroke(); ctx.restore();
     }
   });
 
-  for (let i=0;i<N;i++) {
-    const a=OFF+i*SEG;
+  // Separators
+  for (let i = 0; i < N; i++) {
+    const a = OFF + i*SEG;
     ctx.beginPath();
-    ctx.moveTo(CX+R_IN*Math.cos(a),CY+R_IN*Math.sin(a));
-    ctx.lineTo(CX+(R_OUT+12)*Math.cos(a),CY+(R_OUT+12)*Math.sin(a));
-    ctx.strokeStyle='rgba(0,0,0,0.85)'; ctx.lineWidth=5; ctx.stroke();
+    ctx.moveTo(CX+R_IN*Math.cos(a),       CY+R_IN*Math.sin(a));
+    ctx.lineTo(CX+(R_OUT+12)*Math.cos(a),  CY+(R_OUT+12)*Math.sin(a));
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.lineWidth = 5; ctx.stroke();
   }
 
   ctx.beginPath(); ctx.arc(CX,CY,R_OUT,0,Math.PI*2);
-  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; ctx.stroke();
 
-  const ig=ctx.createRadialGradient(CX-18,CY-18,0,CX,CY,R_IN);
+  const ig = ctx.createRadialGradient(CX-18,CY-18,0,CX,CY,R_IN);
   ig.addColorStop(0,'#1c1c2e'); ig.addColorStop(0.7,'#111120'); ig.addColorStop(1,'#0a0a16');
   ctx.beginPath(); ctx.arc(CX,CY,R_IN,0,Math.PI*2); ctx.fillStyle=ig; ctx.fill();
   ctx.beginPath(); ctx.arc(CX,CY,R_IN,0,Math.PI*2);
   ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1.5; ctx.stroke();
 
-  const tr=R_IN-22;
-  const tp=idx=>{ const a=segMid(idx); return{x:CX+tr*Math.cos(a),y:CY+tr*Math.sin(a)}; };
+  const tr = R_IN-22;
+  const tp = idx => { const a=segMid(idx); return{x:CX+tr*Math.cos(a),y:CY+tr*Math.sin(a)}; };
   ctx.save(); ctx.setLineDash([]);
   const[pa,pb,pc]=[tp(3),tp(7),tp(10)];
   ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.lineTo(pc.x,pc.y); ctx.closePath();
@@ -173,29 +187,35 @@ function drawWheel(ctx, hoverIdx, selIdx, activeArr, pulse) {
   ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=1.2; ctx.stroke();
   ctx.setLineDash([]); ctx.restore();
 
+  // Labels â€” PROBLEM 4 FIX: dim inactive labels
   SEGS.forEach((seg,i)=>{
-    const isAct=!activeArr||activeArr.includes(i);
-    const isH=hoverIdx===i,isS=selIdx===i;
-    const alpha=isH||isS?1:isAct?0.88:0.07;
-    const mid=segMid(i);
-    const lr=(R_IN+R_OUT)/2+(isH?5:isS?3:0);
-    const lx=CX+lr*Math.cos(mid),ly=CY+lr*Math.sin(mid);
+    const isAct = !activeArr || activeArr.includes(i);
+    const isH   = hoverIdx===i, isS = selIdx===i;
+    // Active = 1.0, selected = 0.95, hover = 1.0, inactive = 0.45
+    const alpha = isH ? 1.0 : isS ? 0.95 : isAct ? (activeArr ? 0.9 : 0.72) : 0.45;
+    const mid   = segMid(i);
+    const lr    = (R_IN+R_OUT)/2 + (isH?6:isS?3:0);
+    const lx    = CX+lr*Math.cos(mid), ly=CY+lr*Math.sin(mid);
     ctx.save(); ctx.translate(lx,ly);
     let rot=mid+Math.PI/2; if(Math.cos(mid)<-0.001) rot=mid-Math.PI/2;
     ctx.rotate(rot);
     ctx.shadowColor='rgba(0,0,0,0.95)'; ctx.shadowBlur=10;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='rgba(255,255,255,'+alpha+')';
-    ctx.font='bold '+(isH?12:11)+'px "Space Grotesk",sans-serif';
+    ctx.font='bold '+(isH?12:11)+'px "Inter",sans-serif';
     ctx.fillText(seg.name.toUpperCase(),0,-7);
-    const tc=seg.type==='primary'?'rgba(232,255,71,'+(alpha*0.9)+')':seg.type==='secondary'?'rgba(160,225,255,'+(alpha*0.85)+')':'rgba(180,180,180,'+(alpha*0.55)+')';
-    ctx.fillStyle=tc; ctx.font='8.5px "Space Grotesk",sans-serif';
+    const tc=seg.type==='primary'
+      ?'rgba(232,255,71,'+(alpha*0.9)+')'
+      :seg.type==='secondary'
+        ?'rgba(160,225,255,'+(alpha*0.85)+')'
+        :'rgba(180,180,180,'+(alpha*0.5)+')';
+    ctx.fillStyle=tc; ctx.font='8px "Inter",sans-serif';
     ctx.fillText(seg.type,0,6); ctx.shadowBlur=0; ctx.restore();
   });
 }
 
 // â”€â”€ Copy button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function CopyButton({ hex, color }) {
+function CopyButton({ hex }) {
   const [copied, setCopied] = useState(false);
   const handle = () => {
     if (!hex) return;
@@ -204,22 +224,25 @@ function CopyButton({ hex, color }) {
   };
   return (
     <motion.button onClick={handle}
-      whileTap={{ scale:0.94 }}
+      whileHover={{
+        boxShadow: copied ? '0 0 22px rgba(100,255,150,0.35)' : '0 0 22px rgba(255,255,255,0.12)',
+        y: -1,
+      }}
+      whileTap={{ scale:0.95 }}
       animate={{
         background:  copied?'rgba(100,255,150,0.14)':'rgba(255,255,255,0.07)',
         borderColor: copied?'rgba(100,255,150,0.5)' :'rgba(255,255,255,0.13)',
-        color:       copied?'#6fffaa':'rgba(255,255,255,0.7)',
-        boxShadow:   copied?'0 0 20px rgba(100,255,150,0.3)':'0 0 0px transparent',
+        color:       copied?'#6fffaa':'rgba(255,255,255,0.72)',
       }}
-      transition={{ duration:0.22 }}
+      transition={T_FAST}
       style={{
         width:'100%', padding:'0.65rem', borderRadius:'12px',
         border:'1px solid rgba(255,255,255,0.13)',
-        fontSize:'0.74rem', fontWeight:700, cursor:'pointer',
-        letterSpacing:'.07em', fontFamily:"'Space Grotesk',sans-serif",
+        fontSize:'0.72rem', fontWeight:600, cursor:'pointer',
+        letterSpacing:'.08em', fontFamily:"'Inter',sans-serif",
       }}
     >
-      {copied ? '\u2713 COPIED!' : 'COPY HEX ' + hex}
+      {copied ? '\u2713 COPIED' : 'COPY HEX ' + hex}
     </motion.button>
   );
 }
@@ -241,18 +264,10 @@ export default function ColorWheel() {
   const [ripples,     setRipples]     = useState([]);
   const [wheelScale,  setWheelScale]  = useState(1);
   const [selectorKey, setSelectorKey] = useState(0);
-  const [onWheel,     setOnWheel]     = useState(false);
   const [tiltX,       setTiltX]       = useState(0);
   const [tiltY,       setTiltY]       = useState(0);
 
-  // â”€â”€ Cursor-follow motion values with springs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // For the cursor preview dot (raw cursor position)
-  const cursorX = useMotionValue(0);
-  const cursorY = useMotionValue(0);
-  const smCursorX = useSpring(cursorX, { stiffness:600, damping:30 });
-  const smCursorY = useSpring(cursorY, { stiffness:600, damping:30 });
-
-  // For the selector dot (follows cursor while on wheel, springs to segment center otherwise)
+  // Selector spring â€” follows cursor while dragging, snaps to seg center otherwise
   const selX = useMotionValue(CX);
   const selY = useMotionValue(CY);
   const smSelX = useSpring(selX, { stiffness:320, damping:26 });
@@ -262,7 +277,7 @@ export default function ColorWheel() {
   const harmonyColors = activeArr ? activeArr.map(i=>SEGS[i]) : [];
   const displayColor  = committed || previewCol;
 
-  // â”€â”€ 60fps loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // 60fps loop
   useEffect(()=>{
     const loop=()=>{
       pulseRef.current+=0.065;
@@ -274,15 +289,14 @@ export default function ColorWheel() {
     return()=>cancelAnimationFrame(animRef.current);
   },[selIdx,scheme]);
 
-  // â”€â”€ Commit (click / drag) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Commit segment
   const commitSeg = useCallback((segI, rawCX, rawCY, canvasRect)=>{
     if (segI<0) return;
-    const seg=SEGS[segI];
+    const seg = SEGS[segI];
     setSelIdx(segI);
     setCommitted(seg);
     setSelectorKey(k=>k+1);
 
-    // Ripple â€” faster, snappier (0.25s)
     if (canvasRect) {
       const px=((rawCX-canvasRect.left)/canvasRect.width)*100;
       const py=((rawCY-canvasRect.top)/canvasRect.height)*100;
@@ -290,36 +304,27 @@ export default function ColorWheel() {
       setRipples(p=>[...p,{id,px,py,color:seg.color}]);
       setTimeout(()=>setRipples(p=>p.filter(r=>r.id!==id)),400);
     }
-
-    // Wheel click scale bounce
-    setWheelScale(0.965);
-    setTimeout(()=>setWheelScale(1),160);
+    setWheelScale(0.968);
+    setTimeout(()=>setWheelScale(1),170);
   },[]);
 
-  // â”€â”€ Mouse events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const onMouseDown = useCallback(e=>{
+  // Mouse handlers
+  const onMouseDown=useCallback(e=>{
     isDragging.current=true;
     const c=canvasRef.current; if(!c) return;
     const r=toCanvas(e,c);
-    commitSeg(getSegAt(r.cx,r.cy), r.clientX, r.clientY, r.rect);
+    commitSeg(getSegAt(r.cx,r.cy),r.clientX,r.clientY,r.rect);
   },[commitSeg]);
 
-  const onMouseMove = useCallback(e=>{
+  const onMouseMove=useCallback(e=>{
     const c=canvasRef.current; if(!c) return;
     const r=toCanvas(e,c);
     const segI=getSegAt(r.cx,r.cy);
 
-    // Update cursor preview dot position (in px relative to wrapper)
-    cursorX.set(r.cx);
-    cursorY.set(r.cy);
-
-    // Update selector position to follow real cursor when dragging
     if (isDragging.current && segI>=0) {
-      selX.set(r.cx);
-      selY.set(r.cy);
-      commitSeg(segI, r.clientX, r.clientY, r.rect);
+      selX.set(r.cx); selY.set(r.cy);
+      commitSeg(segI,r.clientX,r.clientY,r.rect);
     } else if (!isDragging.current && selIdx>=0) {
-      // Snap back to segment center when not dragging
       const mid=segMid(selIdx);
       const dr=(R_IN+R_OUT)/2;
       selX.set(CX+dr*Math.cos(mid));
@@ -331,13 +336,12 @@ export default function ColorWheel() {
     setPreviewCol(segI>=0?SEGS[segI]:(committed||null));
     c.style.cursor=segI>=0?'crosshair':'default';
 
-    // 3D tilt â€” max 3 degrees
-    const wRect=wrapRef.current?.getBoundingClientRect();
-    if(wRect){
-      const nx=(e.clientX-wRect.left)/wRect.width-0.5;
-      const ny=(e.clientY-wRect.top)/wRect.height-0.5;
-      setTiltX(-ny*3);
-      setTiltY( nx*3);
+    // 3D tilt â€” max 3deg
+    const wr=wrapRef.current?.getBoundingClientRect();
+    if(wr){
+      const nx=(e.clientX-wr.left)/wr.width-0.5;
+      const ny=(e.clientY-wr.top)/wr.height-0.5;
+      setTiltX(-ny*3); setTiltY(nx*3);
     }
   },[commitSeg,committed,selIdx]);
 
@@ -345,11 +349,9 @@ export default function ColorWheel() {
     isDragging.current=false;
     hoverRef.current=-1;
     setHoverIdx(-1);
-    setOnWheel(false);
     setPreviewCol(committed||null);
     setTiltX(0); setTiltY(0);
     if(canvasRef.current) canvasRef.current.style.cursor='default';
-    // Snap selector back to segment center
     if(selIdx>=0){
       const mid=segMid(selIdx);
       const dr=(R_IN+R_OUT)/2;
@@ -359,9 +361,7 @@ export default function ColorWheel() {
   },[committed,selIdx]);
 
   const onMouseUp=useCallback(()=>{ isDragging.current=false; },[]);
-  const onMouseEnter=useCallback(()=>setOnWheel(true),[]);
 
-  // Touch
   const onTouchStart=useCallback(e=>{
     e.preventDefault(); isDragging.current=true;
     const c=canvasRef.current; if(!c) return;
@@ -373,7 +373,6 @@ export default function ColorWheel() {
     const c=canvasRef.current; if(!c) return;
     const r=toCanvas(e,c);
     const segI=getSegAt(r.cx,r.cy);
-    cursorX.set(r.cx); cursorY.set(r.cy);
     if(segI>=0){ selX.set(r.cx); selY.set(r.cy); commitSeg(segI,r.clientX,r.clientY,r.rect); }
   },[commitSeg]);
   const onTouchEnd=useCallback(()=>{ isDragging.current=false; },[]);
@@ -383,7 +382,6 @@ export default function ColorWheel() {
     return()=>window.removeEventListener('mouseup',onMouseUp);
   },[onMouseUp]);
 
-  // Init selector position
   useEffect(()=>{
     if(selIdx>=0){
       const mid=segMid(selIdx);
@@ -393,85 +391,86 @@ export default function ColorWheel() {
     }
   },[]);
 
-  const tints  = committed?getTints(committed.color):[];
-  const shades = committed?getShades(committed.color):[];
-  const typeTag= committed
-    ?committed.type==='primary'?'#RGB Primary':committed.type==='secondary'?'#RGB Secondary':'#Intermediate'
+  const tints   = committed?getTints(committed.color):[];
+  const shades  = committed?getShades(committed.color):[];
+  const typeTag = committed
+    ?committed.type==='primary'?'Primary':committed.type==='secondary'?'Secondary':'Intermediate'
     :'';
 
   return (
     <motion.section
       id="wheel-section"
-      initial={{ opacity:0, y:24 }}
+      initial={{ opacity:0, y:20 }}
       animate={{ opacity:1, y:0 }}
-      transition={{ duration:0.5, ease:[0.22,1,0.36,1] }}
+      transition={T_SLOW}
       style={{ textAlign:'center', paddingBottom:'5rem' }}
     >
+      {/* PROBLEM 2 FIX: Clash Display heading, Inter body */}
       <div className="section-label" style={{ display:'inline-block' }}>Part 01 &mdash; Color Wheel</div>
-      <h2 className="section-title">Pick a color.<br />See its family.</h2>
-      <p className="section-desc" style={{ margin:'0 auto 2rem' }}>
+      <h2 className="section-title" style={{ fontFamily:"'Clash Display',sans-serif", fontWeight:600, letterSpacing:'-0.02em' }}>
+        Pick a color.<br />See its family.
+      </h2>
+      <p className="section-desc" style={{ margin:'0 auto 2rem', fontFamily:"'Inter',sans-serif", fontSize:'0.85rem', color:'rgba(255,255,255,0.55)' }}>
         Hover to preview &middot; Click or drag to select &middot; Choose a harmony scheme
       </p>
 
-      {/* â”€â”€ Harmony tabs â”€â”€ */}
+      {/* Harmony tabs */}
       <div style={{ display:'flex',gap:'0.5rem',justifyContent:'center',flexWrap:'wrap',marginBottom:'2rem' }}>
         {HARMONY_KEYS.map(k=>(
           <motion.button key={k} onClick={()=>setScheme(k)}
-            whileHover={{ scale:1.05,y:-1 }} whileTap={{ scale:0.94 }}
+            whileHover={{ scale:1.04, y:-1 }}
+            whileTap={{ scale:0.94 }}
             animate={{
               border:     scheme===k?'1.5px solid #e8ff47'          :'1px solid rgba(255,255,255,0.1)',
               background: scheme===k?'rgba(232,255,71,0.12)'        :'rgba(255,255,255,0.04)',
-              color:      scheme===k?'#e8ff47'                      :'rgba(255,255,255,0.5)',
-              boxShadow:  scheme===k?'0 0 18px rgba(232,255,71,0.2)':'0 0 0px transparent',
+              color:      scheme===k?'#e8ff47'                      :'rgba(255,255,255,0.45)',
+              boxShadow:  scheme===k?'0 0 20px rgba(232,255,71,0.2)':'none',
             }}
-            transition={{ duration:0.18 }}
-            style={{ padding:'0.45rem 1.1rem',borderRadius:'999px',cursor:'pointer',fontSize:'0.78rem',backdropFilter:'blur(12px)',fontFamily:"'Space Grotesk',sans-serif",letterSpacing:'0.04em' }}
+            transition={T_FAST}
+            style={{ padding:'0.45rem 1.1rem',borderRadius:'999px',cursor:'pointer',fontSize:'0.75rem',backdropFilter:'blur(12px)',fontFamily:"'Inter',sans-serif",letterSpacing:'0.05em',textTransform:'uppercase' }}
           >{HARMONY_LABELS[k]}</motion.button>
         ))}
       </div>
 
-      {/* â”€â”€ Main layout â”€â”€ */}
+      {/* Main layout */}
       <div style={{ display:'flex',gap:'2.5rem',alignItems:'flex-start',justifyContent:'center',flexWrap:'wrap',maxWidth:'1100px',margin:'0 auto' }}>
 
-        {/* â”€â”€ Wheel â”€â”€ */}
+        {/* Wheel */}
         <div ref={wrapRef} style={{ position:'relative',flexShrink:0,width:SIZE+'px',height:SIZE+'px' }}>
 
-          {/* Strong ambient glow behind wheel */}
+          {/* Ambient glow */}
           <motion.div
-            animate={{ opacity: displayColor?1:0 }}
-            transition={{ duration:0.4 }}
+            animate={{ opacity:displayColor?1:0 }}
+            transition={T_SLOW}
             style={{
               position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
               width:'420px',height:'420px',borderRadius:'50%',
-              background: displayColor
-                ? 'radial-gradient(circle,'+displayColor.color+'40 0%,'+displayColor.color+'10 45%,transparent 68%)'
-                : 'transparent',
-              pointerEvents:'none',zIndex:0,
-              filter:'blur(8px)',
-              transition:'background 0.35s ease',
+              background:displayColor?'radial-gradient(circle,'+displayColor.color+'40 0%,'+displayColor.color+'10 48%,transparent 70%)':'transparent',
+              pointerEvents:'none',zIndex:0,filter:'blur(10px)',
+              transition:'background 0.4s easeOut',
             }}
           />
 
-          {/* Ripples â€” color-based, 0.25s snappy */}
+          {/* Ripples â€” snappy 0.25s */}
           <AnimatePresence>
             {ripples.map(r=>(
               <motion.div key={r.id}
-                initial={{ scale:0, opacity:0.55, x:'-50%', y:'-50%' }}
+                initial={{ scale:0, opacity:0.5, x:'-50%', y:'-50%' }}
                 animate={{ scale:2.5, opacity:0 }}
                 exit={{ opacity:0 }}
                 transition={{ duration:0.25, ease:'easeOut' }}
                 style={{
-                  position:'absolute', left:r.px+'%', top:r.py+'%',
-                  width:'44px', height:'44px', borderRadius:'50%',
+                  position:'absolute',left:r.px+'%',top:r.py+'%',
+                  width:'44px',height:'44px',borderRadius:'50%',
                   border:'2px solid '+r.color,
-                  background:'radial-gradient(circle,'+r.color+'50 0%,transparent 70%)',
-                  pointerEvents:'none', zIndex:22,
+                  background:'radial-gradient(circle,'+r.color+'44 0%,transparent 70%)',
+                  pointerEvents:'none',zIndex:22,
                 }}
               />
             ))}
           </AnimatePresence>
 
-          {/* Canvas with 3D tilt + click scale */}
+          {/* Canvas â€” PROBLEM 7 FIX: subtle breathing animation */}
           <motion.canvas
             ref={canvasRef}
             width={SIZE} height={SIZE}
@@ -480,50 +479,29 @@ export default function ColorWheel() {
               rotateX: tiltX,
               rotateY: tiltY,
             }}
-            transition={{ scale:{ type:'spring',stiffness:600,damping:22 }, rotateX:{ duration:0.15 }, rotateY:{ duration:0.15 } }}
+            transition={{
+              scale:   { type:'spring',stiffness:600,damping:22 },
+              rotateX: T_FAST,
+              rotateY: T_FAST,
+            }}
             style={{
-              width:SIZE+'px', height:SIZE+'px', display:'block',
-              position:'relative', zIndex:1, touchAction:'none',
+              width:SIZE+'px',height:SIZE+'px',display:'block',
+              position:'relative',zIndex:1,touchAction:'none',
               transformStyle:'preserve-3d',
             }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
-            onMouseEnter={onMouseEnter}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           />
 
-          {/* â”€â”€ Cursor preview dot (follows raw cursor, visible on hover only) â”€â”€ */}
-          <AnimatePresence>
-            {onWheel && previewCol && !isDragging.current && (
-              <motion.div
-                initial={{ scale:0, opacity:0 }}
-                animate={{ scale:1, opacity:1 }}
-                exit={{ scale:0, opacity:0 }}
-                transition={{ duration:0.15 }}
-                style={{
-                  position:'absolute',
-                  left:0, top:0,
-                  x: smCursorX,
-                  y: smCursorY,
-                  translateX: '-50%',
-                  translateY: '-50%',
-                  width:'22px', height:'22px', borderRadius:'50%',
-                  background: previewCol.color,
-                  border:'2.5px solid rgba(255,255,255,0.85)',
-                  boxShadow:'0 0 10px '+previewCol.color+'99',
-                  pointerEvents:'none', zIndex:25,
-                  opacity:0.78,
-                }}
-              />
-            )}
-          </AnimatePresence>
+          {/* PROBLEM 1 FIX: cursor dot REMOVED completely */}
 
-          {/* â”€â”€ Selector dot â€” cursor-follow while dragging, snaps to segment center otherwise â”€â”€ */}
+          {/* Selector dot â€” colored, spring physics */}
           <AnimatePresence>
-            {committed && (
+            {committed&&(
               <motion.div
                 key={'sel-'+selectorKey}
                 initial={{ scale:0, opacity:0 }}
@@ -531,111 +509,124 @@ export default function ColorWheel() {
                 exit={{ scale:0, opacity:0 }}
                 transition={{ duration:0.28, ease:[0.34,1.56,0.64,1] }}
                 style={{
-                  position:'absolute',
-                  left:0, top:0,
-                  x: smSelX,
-                  y: smSelY,
-                  translateX: '-50%',
-                  translateY: '-50%',
+                  position:'absolute', left:0, top:0,
+                  x:smSelX, y:smSelY,
+                  translateX:'-50%', translateY:'-50%',
                   width:'20px', height:'20px', borderRadius:'50%',
-                  background: committed.color,
+                  background:committed.color,
                   border:'3px solid rgba(255,255,255,0.95)',
-                  boxShadow: '0 0 0 2px '+committed.color+', 0 0 40px 8px '+committed.color+'88, 0 0 120px '+committed.color+'44',
+                  boxShadow:'0 0 0 2px '+committed.color+', 0 0 40px 8px '+committed.color+'88, 0 0 120px '+committed.color+'44',
                   pointerEvents:'none', zIndex:30,
                 }}
               />
             )}
           </AnimatePresence>
 
-          {/* Outer color dots */}
+          {/* Outer dots â€” PROBLEM 4 FIX: smaller, dimmer when inactive */}
           {SEGS.map((seg,i)=>{
             const mid  = segMid(i);
             const dotX = CX+DOT_R*Math.cos(mid)-DOT_W/2;
             const dotY = CY+DOT_R*Math.sin(mid)-DOT_W/2;
-            const isAct= activeArr?activeArr.includes(i):selIdx===i;
-            const isDim= activeArr?!activeArr.includes(i):false;
+            const isAct = activeArr?activeArr.includes(i):selIdx===i;
+            const isDim = activeArr?!activeArr.includes(i):false;
             return(
               <motion.div key={i} title={seg.name}
                 onClick={()=>commitSeg(i,0,0,null)}
                 onMouseEnter={()=>{ hoverRef.current=i; setPreviewCol(SEGS[i]); }}
                 onMouseLeave={()=>{ hoverRef.current=selIdx; setPreviewCol(committed||null); }}
-                whileHover={{ scale:1.4,zIndex:20 }}
+                whileHover={{ scale:1.35 }}
                 whileTap={{ scale:0.85 }}
-                animate={{ scale:isDim?0.72:isAct?1.38:1, opacity:isDim?0.1:1, boxShadow:isAct?'0 0 0 3px rgba(255,255,255,0.25),0 0 20px 6px '+seg.color+'99':'0 2px 8px rgba(0,0,0,0.5)' }}
-                transition={{ type:'spring',stiffness:380,damping:20 }}
-                style={{ position:'absolute',left:dotX+'px',top:dotY+'px',width:DOT_W+'px',height:DOT_W+'px',borderRadius:'50%',background:seg.color,cursor:'pointer',border:isAct?'3px solid white':'2px solid rgba(255,255,255,0.3)',zIndex:isAct?10:2 }}
+                animate={{
+                  scale:     isDim?0.68:isAct?1.32:1,
+                  opacity:   isDim?0.1:isAct?1:0.5,
+                  boxShadow: isAct?'0 0 0 3px rgba(255,255,255,0.22),0 0 18px 5px '+seg.color+'88':'0 2px 8px rgba(0,0,0,0.5)',
+                }}
+                transition={T_FAST}
+                style={{
+                  position:'absolute',left:dotX+'px',top:dotY+'px',
+                  width:DOT_W+'px',height:DOT_W+'px',borderRadius:'50%',
+                  background:seg.color,cursor:'pointer',
+                  border:isAct?'2.5px solid white':'1.5px solid rgba(255,255,255,0.28)',
+                  zIndex:isAct?10:2,
+                }}
               />
             );
           })}
 
-          {/* Center info bubble */}
+          {/* PROBLEM 3 FIX: center circle 118â†’140px, stronger glow */}
           <motion.div
             animate={{
               background:  displayColor?displayColor.color+'1a':'rgba(10,10,22,0.92)',
               borderColor: displayColor?displayColor.color+'55':'rgba(255,255,255,0.1)',
-              boxShadow:   displayColor?'0 0 120px '+displayColor.color+'44,0 0 40px '+displayColor.color+'30,inset 0 1px 0 rgba(255,255,255,0.1)':'none',
+              boxShadow:   displayColor
+                ?'0 0 140px '+displayColor.color+'55,0 0 60px '+displayColor.color+'40,inset 0 1px 0 rgba(255,255,255,0.1)'
+                :'none',
             }}
-            transition={{ duration:0.3 }}
+            transition={T_MEDIUM}
             style={{
               position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
-              width:'118px',height:'118px',borderRadius:'50%',
+              width:'140px',height:'140px',borderRadius:'50%',
               border:'1.5px solid rgba(255,255,255,0.1)',
-              display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'3px',
+              display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'4px',
               pointerEvents:'none',backdropFilter:'blur(24px)',zIndex:5,
             }}
           >
             <AnimatePresence mode="wait">
               {displayColor?(
                 <motion.div key={displayColor.name}
-                  initial={{ opacity:0,scale:0.8 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.8 }}
-                  transition={{ duration:0.18 }}
-                  style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:'3px' }}
+                  initial={{ opacity:0,scale:0.82 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.82 }}
+                  transition={T_FAST}
+                  style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:'4px' }}
                 >
                   <motion.div
-                    animate={{ background:displayColor.color, boxShadow:'0 0 16px '+displayColor.color+'aa' }}
-                    transition={{ duration:0.25 }}
-                    style={{ width:28,height:28,borderRadius:'50%',border:'2.5px solid rgba(255,255,255,0.4)',marginBottom:'2px' }}
+                    animate={{ background:displayColor.color, boxShadow:'0 0 18px '+displayColor.color+'bb' }}
+                    transition={T_MEDIUM}
+                    style={{ width:32,height:32,borderRadius:'50%',border:'2.5px solid rgba(255,255,255,0.4)',marginBottom:'2px' }}
                   />
-                  <span style={{ fontSize:'0.62rem',fontWeight:700,color:'white',textAlign:'center',padding:'0 6px',lineHeight:1.1 }}>{displayColor.name}</span>
-                  <span style={{ fontFamily:'monospace',fontSize:'0.46rem',color:'rgba(255,255,255,0.4)',letterSpacing:'.04em' }}>{displayColor.color}</span>
+                  {/* PROBLEM 2 FIX: Clash Display name, monospace hex */}
+                  <span style={{ fontFamily:"'Clash Display',sans-serif",fontSize:'0.75rem',fontWeight:600,color:'white',textAlign:'center',padding:'0 8px',lineHeight:1.1,letterSpacing:'-0.01em' }}>{displayColor.name}</span>
+                  <span style={{ fontFamily:'monospace',fontSize:'0.5rem',color:'rgba(255,255,255,0.45)',letterSpacing:'.04em' }}>{displayColor.color}</span>
                 </motion.div>
               ):(
                 <motion.span key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-                  style={{ fontSize:'0.6rem',color:'rgba(255,255,255,0.25)',textAlign:'center',padding:'0 10px',lineHeight:1.5 }}
+                  style={{ fontFamily:"'Inter',sans-serif",fontSize:'0.62rem',color:'rgba(255,255,255,0.22)',textAlign:'center',padding:'0 12px',lineHeight:1.6 }}
                 >Hover<br/>a color</motion.span>
               )}
             </AnimatePresence>
           </motion.div>
         </div>
 
-        {/* â”€â”€ Right panel â”€â”€ */}
+        {/* Right panel */}
         <div style={{ flex:'0 0 320px',minWidth:'280px',textAlign:'left',display:'flex',flexDirection:'column',gap:'1rem' }}>
 
-          {/* Color preview card â€” glassmorphic, strong glow */}
+          {/* PROBLEM 6 FIX: stronger glass panels */}
           <motion.div
             animate={{
-              borderColor: committed?committed.color+'44':'rgba(255,255,255,0.08)',
-              boxShadow:   committed?'0 0 120px '+committed.color+'30,0 0 40px '+committed.color+'20,0 10px 40px rgba(0,0,0,0.6)':'0 10px 40px rgba(0,0,0,0.6)',
+              borderColor: committed?committed.color+'44':'rgba(255,255,255,0.12)',
+              boxShadow:   committed
+                ?'0 0 120px '+committed.color+'30,0 0 40px '+committed.color+'18,0 10px 40px rgba(0,0,0,0.6)'
+                :'0 10px 40px rgba(0,0,0,0.6)',
             }}
-            transition={{ duration:0.35 }}
+            transition={T_MEDIUM}
             style={{
               borderRadius:'20px',overflow:'hidden',
-              border:'1px solid rgba(255,255,255,0.08)',
-              background:'rgba(255,255,255,0.05)',
-              backdropFilter:'blur(20px)',
+              border:'1px solid rgba(255,255,255,0.12)',
+              background:'rgba(255,255,255,0.06)',
+              backdropFilter:'blur(30px)',
               boxShadow:'0 10px 40px rgba(0,0,0,0.6)',
             }}
           >
             <motion.div
               animate={{ background:committed?committed.color:'rgba(255,255,255,0.04)' }}
-              transition={{ duration:0.3 }}
+              transition={T_MEDIUM}
               style={{ height:'110px',position:'relative' }}
             >
-              {committed&&<div style={{ position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(255,255,255,0.2) 0%,transparent 55%)' }}/>}
-              {committed&&<motion.div
-                initial={{ opacity:0,y:4 }} animate={{ opacity:1,y:0 }}
-                style={{ position:'absolute',bottom:'0.7rem',left:'0.9rem',fontSize:'0.6rem',fontWeight:700,color:'rgba(255,255,255,0.65)',letterSpacing:'.12em',textTransform:'uppercase' }}
-              >{typeTag}</motion.div>}
+              {committed&&<div style={{ position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(255,255,255,0.18) 0%,transparent 55%)' }}/>}
+              {committed&&(
+                <div style={{ position:'absolute',bottom:'0.7rem',left:'0.9rem',fontSize:'0.58rem',fontWeight:700,color:'rgba(255,255,255,0.6)',letterSpacing:'.14em',textTransform:'uppercase',fontFamily:"'Inter',sans-serif" }}>
+                  {typeTag}
+                </div>
+              )}
             </motion.div>
 
             <div style={{ padding:'1.2rem' }}>
@@ -643,17 +634,24 @@ export default function ColorWheel() {
                 {committed?(
                   <motion.div key={committed.name}
                     initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-8 }}
-                    transition={{ duration:0.2 }}
+                    transition={T_MEDIUM}
                   >
-                    <div style={{ fontFamily:"'Clash Display',sans-serif",fontSize:'1.4rem',color:'white',marginBottom:'0.1rem',letterSpacing:'-0.01em' }}>{committed.name}</div>
-                    {/* Big HEX display */}
-                    <div style={{ fontFamily:'monospace',fontSize:'1rem',fontWeight:700,color:'rgba(255,255,255,0.85)',marginBottom:'0.2rem',letterSpacing:'0.04em' }}>{committed.color}</div>
-                    <div style={{ fontFamily:'monospace',fontSize:'0.7rem',color:'rgba(255,255,255,0.35)',marginBottom:'1rem' }}>rgb({committed.rgb})</div>
-                    <CopyButton hex={committed.color} color={committed.color}/>
+                    {/* PROBLEM 2 FIX: large Clash Display name */}
+                    <div style={{ fontFamily:"'Clash Display',sans-serif",fontSize:'1.6rem',fontWeight:600,color:'white',marginBottom:'0.05rem',letterSpacing:'-0.02em',lineHeight:1.1 }}>
+                      {committed.name}
+                    </div>
+                    {/* Big monospace HEX */}
+                    <div style={{ fontFamily:'monospace',fontSize:'1.05rem',fontWeight:700,color:'rgba(255,255,255,0.88)',marginBottom:'0.15rem',letterSpacing:'0.03em' }}>
+                      {committed.color}
+                    </div>
+                    <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'0.72rem',color:'rgba(255,255,255,0.35)',marginBottom:'1rem' }}>
+                      rgb({committed.rgb})
+                    </div>
+                    <CopyButton hex={committed.color}/>
                   </motion.div>
                 ):(
                   <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-                    style={{ color:'rgba(255,255,255,0.2)',fontSize:'0.82rem',textAlign:'center',padding:'0.5rem 0' }}
+                    style={{ fontFamily:"'Inter',sans-serif",color:'rgba(255,255,255,0.2)',fontSize:'0.82rem',textAlign:'center',padding:'0.5rem 0' }}
                   >Select a color from the wheel</motion.div>
                 )}
               </AnimatePresence>
@@ -665,25 +663,24 @@ export default function ColorWheel() {
             {harmonyColors.length>0&&(
               <motion.div
                 initial={{ opacity:0,y:10 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:10 }}
-                transition={{ duration:0.22 }}
-                style={{ borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.05)',backdropFilter:'blur(20px)',padding:'1.1rem',boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}
+                transition={T_MEDIUM}
+                style={{ borderRadius:'20px',border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.06)',backdropFilter:'blur(30px)',padding:'1.1rem',boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}
               >
-                <div style={{ fontSize:'0.6rem',color:'rgba(255,255,255,0.32)',letterSpacing:'.14em',textTransform:'uppercase',marginBottom:'0.8rem' }}>{scheme} palette</div>
+                <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'0.85rem' }}>{scheme} palette</div>
                 <div style={{ display:'flex',gap:'0.5rem' }}>
                   {harmonyColors.map((seg,k)=>(
                     <motion.div key={k}
-                      whileHover={{ y:-4,boxShadow:'0 8px 24px '+seg.color+'66' }}
+                      whileHover={{ y:-4,boxShadow:'0 8px 24px '+seg.color+'55',transition:T_FAST }}
                       whileTap={{ scale:0.94 }}
-                      transition={{ duration:0.18 }}
                       onClick={()=>commitSeg(activeArr[k])}
                       style={{ flex:1,cursor:'pointer',borderRadius:'12px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.1)' }}
                     >
                       <div style={{ height:'52px',background:seg.color,position:'relative' }}>
                         <div style={{ position:'absolute',inset:0,background:'linear-gradient(135deg,rgba(255,255,255,0.15) 0%,transparent 60%)' }}/>
                       </div>
-                      <div style={{ padding:'0.35rem 0.5rem',background:'rgba(0,0,0,0.35)' }}>
-                        <div style={{ fontSize:'0.58rem',fontWeight:700,color:'white',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{seg.name}</div>
-                        <div style={{ fontFamily:'monospace',fontSize:'0.5rem',color:'rgba(255,255,255,0.32)' }}>{seg.color}</div>
+                      <div style={{ padding:'0.4rem 0.5rem',background:'rgba(0,0,0,0.35)' }}>
+                        <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'0.58rem',fontWeight:600,color:'white',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{seg.name}</div>
+                        <div style={{ fontFamily:'monospace',fontSize:'0.5rem',color:'rgba(255,255,255,0.3)' }}>{seg.color}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -692,24 +689,24 @@ export default function ColorWheel() {
             )}
           </AnimatePresence>
 
-          {/* Tints + shades â€” hover scale interaction */}
+          {/* Tints + shades */}
           <AnimatePresence>
             {committed&&(
               <motion.div
                 initial={{ opacity:0,y:10 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0 }}
-                transition={{ duration:0.22 }}
-                style={{ borderRadius:'20px',border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.05)',backdropFilter:'blur(20px)',padding:'1.1rem',boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}
+                transition={T_MEDIUM}
+                style={{ borderRadius:'20px',border:'1px solid rgba(255,255,255,0.12)',background:'rgba(255,255,255,0.06)',backdropFilter:'blur(30px)',padding:'1.1rem',boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}
               >
-                <div style={{ fontSize:'0.6rem',color:'rgba(255,255,255,0.32)',letterSpacing:'.14em',textTransform:'uppercase',marginBottom:'0.65rem' }}>Tints &amp; Shades</div>
+                <div style={{ fontFamily:"'Inter',sans-serif",fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',letterSpacing:'.15em',textTransform:'uppercase',marginBottom:'0.65rem' }}>Tints &amp; Shades</div>
                 <div style={{ display:'flex',gap:'3px',borderRadius:'10px',overflow:'hidden',height:'48px' }}>
                   {[...tints.slice().reverse(),committed.color,...shades].map((h,k)=>(
                     <motion.div key={k} title={h}
-                      whileHover={{ scaleY:1.15, zIndex:5, boxShadow:'0 0 12px '+h+'aa', transition:{ duration:0.15 } }}
+                      whileHover={{ scaleY:1.14,zIndex:5,transition:T_FAST }}
                       style={{ flex:1,background:h,cursor:'pointer',originY:'bottom' }}
                     />
                   ))}
                 </div>
-                <div style={{ display:'flex',justifyContent:'space-between',fontSize:'0.54rem',color:'rgba(255,255,255,0.18)',marginTop:'0.4rem' }}>
+                <div style={{ display:'flex',justifyContent:'space-between',fontFamily:"'Inter',sans-serif",fontSize:'0.52rem',color:'rgba(255,255,255,0.18)',marginTop:'0.4rem' }}>
                   <span>lighter</span><span>pure</span><span>darker</span>
                 </div>
               </motion.div>
@@ -718,9 +715,9 @@ export default function ColorWheel() {
 
           {/* Scheme description */}
           <motion.div
-            animate={{ borderColor:committed?committed.color+'25':'rgba(255,255,255,0.07)' }}
-            transition={{ duration:0.3 }}
-            style={{ borderRadius:'14px',padding:'0.95rem 1.1rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',fontSize:'0.79rem',color:'#888',lineHeight:1.8,backdropFilter:'blur(12px)' }}
+            animate={{ borderColor:committed?committed.color+'22':'rgba(255,255,255,0.07)' }}
+            transition={T_SLOW}
+            style={{ borderRadius:'14px',padding:'0.95rem 1.1rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.07)',fontFamily:"'Inter',sans-serif",fontSize:'0.79rem',color:'rgba(255,255,255,0.45)',lineHeight:1.8,backdropFilter:'blur(12px)' }}
             dangerouslySetInnerHTML={{ __html:SCHEME_DESC[scheme]||'' }}
           />
         </div>
@@ -728,11 +725,11 @@ export default function ColorWheel() {
 
       {/* Legend */}
       <div style={{ display:'flex',gap:'2rem',justifyContent:'center',marginTop:'2.5rem',flexWrap:'wrap' }}>
-        <div style={{ display:'flex',alignItems:'center',gap:'0.45rem',fontSize:'0.67rem',color:'#666' }}>
-          <div style={{ width:10,height:10,borderRadius:'50%',background:'rgba(255,255,255,0.5)' }}/>Solid = Primaries (R, G, B)
+        <div style={{ display:'flex',alignItems:'center',gap:'0.45rem',fontFamily:"'Inter',sans-serif",fontSize:'0.65rem',color:'rgba(255,255,255,0.3)' }}>
+          <div style={{ width:9,height:9,borderRadius:'50%',background:'rgba(255,255,255,0.45)' }}/>Solid = Primaries (R, G, B)
         </div>
-        <div style={{ display:'flex',alignItems:'center',gap:'0.45rem',fontSize:'0.67rem',color:'#555' }}>
-          <div style={{ width:10,height:3,background:'rgba(255,255,255,0.28)',borderRadius:2 }}/>Dashed = Secondaries (Y, C, M)
+        <div style={{ display:'flex',alignItems:'center',gap:'0.45rem',fontFamily:"'Inter',sans-serif",fontSize:'0.65rem',color:'rgba(255,255,255,0.22)' }}>
+          <div style={{ width:9,height:3,background:'rgba(255,255,255,0.25)',borderRadius:2 }}/>Dashed = Secondaries (Y, C, M)
         </div>
       </div>
     </motion.section>
