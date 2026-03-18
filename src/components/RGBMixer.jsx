@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { rgbToHex } from '../utils/colorUtils';
+import { emitColor } from '../utils/colorBus';
 
 export default function RGBMixer() {
   const [r, setR] = useState(220);
@@ -11,12 +12,13 @@ export default function RGBMixer() {
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   const textColor = lum > 130 ? '#0a0a0f' : 'white';
 
+  useEffect(() => { emitColor(hex, 'RGB Mixer'); }, [hex]);
+
   return (
     <section id="rgb-section">
       <div className="section-label">Part 03 — RGB Additive Model</div>
       <h2 className="section-title">Build any color<br />from light.</h2>
       <p className="section-desc">Every screen mixes Red, Green, and Blue light. Drag the sliders to mix any color and instantly see its HEX and complementary color.</p>
-
       <div className="rgb-mixer">
         <div>
           <div className="rgb-row">
@@ -39,13 +41,15 @@ export default function RGBMixer() {
               <div style={{ fontSize: '.74rem', color: 'var(--muted)', marginBottom: '.25rem' }}>Complementary Color</div>
               <div style={{ fontFamily: 'monospace', fontSize: '.84rem' }}>{compHex.toUpperCase()}</div>
             </div>
-            <div className="comp-sw" style={{ background: compHex }} />
+            <div className="comp-sw" style={{ background: compHex, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+              onClick={() => emitColor(compHex, 'Complementary')}
+              onMouseEnter={e => { e.currentTarget.style.transform='scale(1.12)'; e.currentTarget.style.boxShadow=`0 0 16px ${compHex}88`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }} />
           </div>
         </div>
-
-        <div className="rgb-preview" style={{ background: hex }}>
-          <div className="rgb-hexv" style={{ color: textColor }}>{hex.toUpperCase()}</div>
-          <div className="rgb-sub" style={{ color: textColor }}>rgb({r}, {g}, {b})</div>
+        <div className="rgb-preview" style={{ background: hex, transition: 'background 0.08s, box-shadow 0.35s', boxShadow: `0 0 50px ${hex}44, 0 8px 32px rgba(0,0,0,0.4)` }}>
+          <div className="rgb-hexv" style={{ color: textColor, transition: 'color 0.2s' }}>{hex.toUpperCase()}</div>
+          <div className="rgb-sub" style={{ color: textColor, transition: 'color 0.2s' }}>rgb({r}, {g}, {b})</div>
         </div>
       </div>
     </section>

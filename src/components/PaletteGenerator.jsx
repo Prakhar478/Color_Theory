@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { emitColor } from '../utils/colorBus';
 import { hslToHex, hexToRgb, rgbToHex } from '../utils/colorUtils';
 
 function hexToHSL(hex) {
@@ -70,7 +71,7 @@ export default function PaletteGenerator() {
       <div className="gen-palette">
         {colors.map((hex, i) => (
           <div key={i} className="gen-swatch" style={{ background: hex }}
-            onClick={() => { navigator.clipboard.writeText(hex).catch(() => {}); }}>
+            onClick={() => { navigator.clipboard.writeText(hex).catch(() => {}); emitColor(hex, 'Palette Generator'); }}>
             <div className="gen-swatch-label">{hex.toUpperCase()}</div>
           </div>
         ))}

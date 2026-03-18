@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { hsbToHex, hslToHex, hexToRgb } from '../utils/colorUtils';
+import { emitColor } from '../utils/colorBus';
 
 const STEPS = [0, 20, 40, 60, 80, 100];
 
@@ -12,6 +13,7 @@ export default function HSBStudio() {
 
   // Main HSB swatch
   const mainHex = hsbToHex(hue, sat, bri);
+  useEffect(() => { emitColor(mainHex, 'HSB Studio'); }, [mainHex]);
   const [mr, mg, mb] = hexToRgb(mainHex);
   const mainLum = 0.299 * mr + 0.587 * mg + 0.114 * mb;
   const mainTextColor = mainLum > 140 ? '#0a0a0f' : '#fff';

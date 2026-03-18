@@ -1,3 +1,4 @@
+import { emitColor } from '../utils/colorBus';
 ﻿const PALETTES = [
   {
     name: 'Complementary',
@@ -23,6 +24,7 @@
 
 function cpHex(h, el) {
   navigator.clipboard.writeText(h).catch(() => {});
+  emitColor(h, 'Color Schemes');
   const o = el.textContent;
   el.textContent = 'Copied!';
   el.style.color = 'var(--accent)';

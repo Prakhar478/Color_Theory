@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { emitColor } from '../utils/colorBus';
+import { hslToHex } from '../utils/colorUtils';
 
 const STEPS = 8;
 
@@ -24,6 +26,7 @@ function buildStrips(h) {
 export default function ColorValues() {
   const [hue, setHue] = useState(200);
   const { shades, tints, tones } = buildStrips(hue);
+  useEffect(() => { emitColor(hslToHex(hue, 100, 50), 'Color Values'); }, [hue]);
 
   return (
     <section id="values-section">

@@ -1,123 +1,205 @@
-/* ── Smooth scroll globally ── */
-html {
-  scroll-behavior: smooth;
+/* ══════════════════════════════════════════════════════
+   UI ENHANCEMENTS — Color-reactive, micro-interactions
+   ══════════════════════════════════════════════════════ */
+
+/* ── Smooth scroll ── */
+html { scroll-behavior: smooth; }
+
+/* ── CSS vars updated by colorBus (reactive accent) ──
+   --live-color, --live-color-dim set via JS            */
+:root {
+  --live-color:     #1A8FD1;
+  --live-color-dim: #1A8FD122;
+  --live-color-mid: #1A8FD155;
 }
 
-/* ── Mouse-tracking orb ──
-   Follows --mouse-x / --mouse-y CSS vars set in main.jsx             */
+/* ── Mouse-tracking orb ── */
 .mouse-orb {
   background: radial-gradient(
-    circle 520px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(232, 255, 71, 0.032) 0%,
-    rgba(123, 47, 190, 0.018) 45%,
+    circle 480px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(232,255,71,0.028) 0%,
+    rgba(123,47,190,0.015) 50%,
     transparent 75%
   );
   will-change: background;
-  transition: background 0.12s linear;
+  transition: background 0.1s linear;
 }
 
-/* ── Smooth button transitions (all buttons site-wide) ── */
-button,
-.scheme-btn,
-.gen-btn,
-.mix-tab,
-.grad-type-btn,
-.bw-preset,
-.htag,
-.gen-swatch {
+/* ══ SMOOTH TRANSITIONS ══ */
+
+/* All interactive elements */
+button, .scheme-btn, .gen-btn, .mix-tab,
+.grad-type-btn, .bw-preset, .htag, .gen-swatch,
+.palette-card, .hsb-card, .model-card, .temp-card,
+.psych-card, .values-card, .rule-info-card {
   transition:
-    background   0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    color        0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    transform    0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow   0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity      0.18s ease !important;
+    background   0.25s cubic-bezier(0.4,0,0.2,1),
+    border-color 0.25s cubic-bezier(0.4,0,0.2,1),
+    color        0.25s cubic-bezier(0.4,0,0.2,1),
+    transform    0.2s  cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow   0.25s cubic-bezier(0.4,0,0.2,1),
+    opacity      0.2s  ease !important;
 }
 
-button:hover,
-.scheme-btn:hover,
-.gen-btn:hover {
-  transform: translateY(-2px) scale(1.03);
+button:hover, .scheme-btn:hover, .gen-btn:hover { transform: translateY(-2px) scale(1.04); }
+button:active, .scheme-btn:active, .gen-btn:active { transform: scale(0.95) !important; transition-duration: 0.08s !important; }
+
+/* Color preview elements */
+.rgb-preview, .hsb-main-swatch, .contrast-inner, .comp-sw,
+.rgb-hexv, .rgb-sub, .hsb-swatch-hex, .gen-swatch {
+  transition: background 0.1s ease, color 0.2s ease, box-shadow 0.4s ease !important;
 }
 
-button:active,
-.scheme-btn:active,
-.gen-btn:active {
-  transform: scale(0.96) !important;
-  transition-duration: 0.08s !important;
+/* ══ RANGE SLIDERS — reactive to live color ══ */
+input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
+}
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.32) !important;
+  box-shadow: 0 0 0 4px var(--live-color-dim), 0 0 14px var(--live-color-mid) !important;
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.1) !important;
+  box-shadow: 0 0 0 6px var(--live-color-dim), 0 0 20px var(--live-color-mid) !important;
 }
 
-/* ── Smooth color pickers ── */
+/* ══ COLOR PICKERS ══ */
 input[type="color"] {
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
 }
 input[type="color"]:hover {
-  transform: scale(1.12);
+  transform: scale(1.14);
+  box-shadow: 0 0 18px var(--live-color-mid);
 }
 
-/* ── Section separator glow pulse ── */
+/* ══ SECTION SEPARATOR — live color pulse ══ */
 .sep {
-  width: 100%;
-  max-width: 1100px;
-  height: 1px;
-  margin: 0 auto;
+  width: 100%; max-width: 1100px; height: 1px;
+  margin: 0 auto; position: relative; overflow: visible;
   background: linear-gradient(to right, transparent, rgba(255,255,255,0.07), transparent);
-  position: relative;
-  overflow: visible;
 }
 .sep::after {
   content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  width: 40%;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(232,255,71,0.18), transparent);
-  animation: sepPulse 4s ease-in-out infinite;
+  background: linear-gradient(to right, transparent, var(--live-color), transparent);
+  animation: sepPulse 3.5s ease-in-out infinite;
+  opacity: 0.5;
 }
 @keyframes sepPulse {
-  0%, 100% { opacity: 0.3; width: 18%; }
-  50%       { opacity: 1;   width: 52%; }
+  0%,100% { width: 12%; opacity: 0.25; }
+  50%      { width: 48%; opacity: 0.7;  }
 }
 
-/* ── Palette swatch hover expand ── */
-.palette-swatch div,
-.gen-swatch,
-.values-strip div {
-  transition: flex 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+/* ══ PALETTE SWATCH HOVER EXPAND ══ */
+.palette-swatch div, .gen-swatch, .values-strip div {
+  transition: flex 0.32s cubic-bezier(0.34,1.56,0.64,1) !important;
 }
 
-/* ── Navbar active link smooth indicator ── */
-.nav-links a {
-  position: relative;
-}
+/* ══ NAVBAR ACTIVE INDICATOR ══ */
+.nav-links a { position: relative; }
 .nav-links a.active::after {
   content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0; right: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--accent);
-  animation: navUnderline 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  position: absolute; bottom: -4px; left: 0; right: 0;
+  height: 2px; border-radius: 2px;
+  background: var(--live-color, var(--accent));
+  animation: navSlideIn 0.28s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  transition: background 0.4s ease;
 }
-@keyframes navUnderline {
+@keyframes navSlideIn {
   from { transform: scaleX(0); opacity: 0; }
   to   { transform: scaleX(1); opacity: 1; }
 }
 
-/* ── Card hover lifts ── */
-.palette-card,
-.hsb-card,
-.model-card,
-.temp-card,
-.rule-info-card,
-.values-card,
-.psych-card {
-  transition:
-    transform    0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow   0.28s ease,
-    border-color 0.28s ease,
-    background   0.28s ease !important;
+/* ══ CARD HOVER LIFTS — reactive glow ══ */
+.palette-card:hover {
+  box-shadow: 0 20px 56px rgba(0,0,0,0.5), 0 0 0 1px var(--live-color-dim) !important;
+  border-color: var(--live-color-mid) !important;
+}
+.hsb-card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.4), 0 0 20px var(--live-color-dim) !important;
+}
+.psych-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 28px var(--live-color-dim) !important;
+}
+
+/* ══ HEX TAG COPY ══ */
+.htag {
+  position: relative; overflow: hidden;
+}
+.htag::after {
+  content: 'copy';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--live-color-dim, rgba(232,255,71,0.15));
+  color: var(--live-color, var(--accent));
+  font-size: 0.58rem; letter-spacing: 0.1em;
+  opacity: 0; transition: opacity 0.18s ease;
+  border-radius: 4px;
+}
+.htag:hover::after { opacity: 1; }
+.htag:active       { transform: scale(0.93) !important; }
+
+/* ══ STEP SWATCH HOVER ══ */
+.step-swatch {
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease !important;
+}
+.step-swatch:hover {
+  transform: scale(1.14) translateY(-4px) !important;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 16px var(--live-color-mid) !important;
+}
+
+/* ══ GRADIENT GALLERY ══ */
+.grad-card {
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease !important;
+}
+.grad-card:hover {
+  transform: scale(1.06) translateY(-3px) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6) !important;
+}
+
+/* ══ SCHEME BUTTON ACTIVE RING ══ */
+.scheme-btn.active {
+  box-shadow: 0 0 0 2px var(--live-color-mid), 0 4px 16px var(--live-color-dim) !important;
+}
+
+/* ══ HSL row focus highlight ══ */
+.hsb-row:focus-within .hsb-row-title {
+  color: var(--live-color, var(--accent)) !important;
+  transition: color 0.2s;
+}
+.hsb-row:focus-within .hsb-row-val {
+  color: var(--live-color, var(--accent)) !important;
+}
+
+/* ══ GEN SWATCH expand + glow ══ */
+.gen-swatch:hover {
+  box-shadow: 0 0 28px var(--live-color-mid) !important;
+}
+
+/* ══ SELECTION PULSE KEYFRAME ══ */
+@keyframes colorSelectPulse {
+  0%   { box-shadow: 0 0 0 0px var(--live-color); }
+  60%  { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0px transparent; }
+}
+.pulse-select {
+  animation: colorSelectPulse 0.5s ease forwards !important;
+}
+
+/* ══ MOBILE — always show labels ══ */
+@media (hover: none) {
+  .gen-swatch-label { opacity: 1 !important; }
+  .grad-card-label  { opacity: 1 !important; }
+}
+
+/* ══ FOCUS RINGS ══ */
+button:focus-visible,
+input[type="range"]:focus-visible,
+input[type="color"]:focus-visible {
+  outline: 2px solid var(--live-color, rgba(232,255,71,0.6));
+  outline-offset: 3px;
 }

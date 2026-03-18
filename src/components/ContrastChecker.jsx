@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { emitColor } from '../utils/colorBus';
 import { luminance } from '../utils/colorUtils';
 
 function cRatio(a, b) {
@@ -19,6 +20,7 @@ export default function ContrastChecker() {
   const [bgColor, setBgColor] = useState('#1a1a2e');
 
   const isValidHex = hex => /^#[0-9a-f]{6}$/i.test(hex);
+  useEffect(() => { if (isValidHex(bgColor)) emitColor(bgColor, 'Contrast Checker'); }, [bgColor]);
   const ratio = isValidHex(textColor) && isValidHex(bgColor) ? cRatio(textColor, bgColor) : null;
 
   const handleTextPicker = (e) => {

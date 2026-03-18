@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { emitColor } from '../utils/colorBus';
 
 export default function Rule6030() {
   const [c60, setC60] = useState('#1a2744');
   const [c30, setC30] = useState('#2d4a8a');
   const [c10, setC10] = useState('#e8ff47');
+  useEffect(() => { emitColor(c60, '60-30-10 Rule'); }, [c60]);
 
   return (
     <section id="rule-section">

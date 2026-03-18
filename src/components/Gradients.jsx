@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { emitColor } from '../utils/colorBus';
 import { hslToHex, hexToRgb, rgbToHex } from '../utils/colorUtils';
 
 const GRAD_GALLERY = [
@@ -28,6 +29,7 @@ export default function Gradients() {
   const [angle, setAngle] = useState(135);
   const [stops, setStops] = useState(['#e8ff47', '#3366ff', '#ff3366']);
 
+  useEffect(() => { emitColor(stops[0], 'Gradient Builder'); }, [stops]);
   const showAngle = gradType !== 'radial';
   const gradCSS = buildGradCSS(gradType, stops, angle);
 
