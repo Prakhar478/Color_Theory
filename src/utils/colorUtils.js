@@ -1,15 +1,22 @@
-export function rgbToHex(r, g, b) {
+﻿export function rgbToHex(r, g, b) {
   return '#' + [r, g, b].map(x =>
     Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')
   ).join('');
 }
 
 export function hexToRgb(hex) {
-  return [
-    parseInt(hex.slice(1, 3), 16),
-    parseInt(hex.slice(3, 5), 16),
-    parseInt(hex.slice(5, 7), 16),
-  ];
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3
+    ? clean.split('').map(c => c + c).join('')
+    : clean;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return [0, 0, 0];
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+export function hexToRgbObj(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  return { r, g, b };
 }
 
 export function hsbToHex(h, s, b) {

@@ -1,4 +1,4 @@
-const PALETTES = [
+﻿const PALETTES = [
   {
     name: 'Complementary',
     desc: 'Orange & Blue — max contrast, energetic. Opposite hues create visual tension.',
@@ -11,7 +11,7 @@ const PALETTES = [
   },
   {
     name: 'Triadic',
-    desc: 'Red, Yellow, Blue — vibrant and balanced. Three equidistant hues.',
+    desc: 'Three equidistant hues (120 degrees apart) on the color wheel. Vibrant and balanced.',
     colors: ['#E63946', '#FFBE0B', '#457B9D', '#A8DADC', '#F1FAEE'],
   },
   {
@@ -66,3 +66,4 @@ export default function PaletteSection() {
     </section>
   );
 }
+
