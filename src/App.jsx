@@ -45,6 +45,7 @@ const SECTIONS = [
   { id: 'psychology-section',  C: ColorPsychology },
 ];
 
+// Global isMobile helper — checked once at module level for non-reactive uses
 const isMobile = () => window.innerWidth <= 768;
 
 // Section loader placeholder
@@ -64,7 +65,7 @@ function SectionReveal({ children }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const mobile = isMobile();
+  const mobile = window.innerWidth <= 768;
 
   useEffect(() => {
     const el = ref.current;
@@ -106,7 +107,13 @@ function SectionReveal({ children }) {
 export default function App() {
   const [activeSection, setActiveSection] = useState('wheel-section');
   const [liveColor, setLiveColor] = useState('#1A8FD1');
-  const mobile = isMobile();
+  const [mobile, setMobile] = useState(isMobile());
+
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Track active section
   useEffect(() => {

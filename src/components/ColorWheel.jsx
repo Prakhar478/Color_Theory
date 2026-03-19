@@ -50,9 +50,9 @@ const SCHEME_DESC = {
 };
 
 // â”€â”€ Timing tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const T_FAST   = { duration: 0.15, ease: 'easeOut' };
-const T_MEDIUM = { duration: 0.25, ease: 'easeOut' };
-const T_SLOW   = { duration: 0.40, ease: 'easeOut' };
+const T_FAST   = { duration: 0.08, ease: 'easeOut' };
+const T_MEDIUM = { duration: 0.12, ease: 'easeOut' };
+const T_SLOW   = { duration: 0.22, ease: 'easeOut' };
 
 // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const segMid = i => OFF + (i + 0.5) * SEG;
@@ -269,13 +269,9 @@ export default function ColorWheel() {
   const [tiltY,       setTiltY]       = useState(0);
   const [canvasScale, setCanvasScale] = useState(1);
 
-  // Scale wheel to fit mobile screen
-  // The outer dots extend ~28px beyond the 480px canvas on each side
-  // So total visual width = 480 + 56 = 536px. We scale to fit that.
   useEffect(() => {
     const updateScale = () => {
-      const VISUAL = SIZE + 56; // dots overflow
-      // Use 88% of screen on mobile so wheel doesn't touch edges
+      const VISUAL = SIZE + 56;
       const padding = window.innerWidth < 600 ? 40 : 16;
       const available = Math.min(window.innerWidth - padding, VISUAL);
       setCanvasScale(Math.min(available / VISUAL, 1));
@@ -288,8 +284,8 @@ export default function ColorWheel() {
   // Selector spring â€” follows cursor while dragging, snaps to seg center otherwise
   const selX = useMotionValue(CX);
   const selY = useMotionValue(CY);
-  const smSelX = useSpring(selX, { stiffness:320, damping:26 });
-  const smSelY = useSpring(selY, { stiffness:320, damping:26 });
+  const smSelX = useSpring(selX, { stiffness:1000, damping:45 });
+  const smSelY = useSpring(selY, { stiffness:1000, damping:45 });
 
   const activeArr     = scheme==='none'||selIdx<0 ? null : HARMONIES[scheme]?.(selIdx);
   const harmonyColors = activeArr ? activeArr.map(i=>SEGS[i]) : [];
@@ -315,6 +311,12 @@ export default function ColorWheel() {
     setCommitted(seg);
     setSelectorKey(k=>k+1);
 
+    // Always snap dot to segment center — never follow raw cursor
+    const mid = segMid(segI);
+    const dr  = (R_IN + R_OUT) / 2;
+    selX.set(CX + dr * Math.cos(mid));
+    selY.set(CY + dr * Math.sin(mid));
+
     if (canvasRect) {
       const px=((rawCX-canvasRect.left)/canvasRect.width)*100;
       const py=((rawCY-canvasRect.top)/canvasRect.height)*100;
@@ -322,8 +324,8 @@ export default function ColorWheel() {
       setRipples(p=>[...p,{id,px,py,color:seg.color}]);
       setTimeout(()=>setRipples(p=>p.filter(r=>r.id!==id)),400);
     }
-    setWheelScale(0.968);
-    setTimeout(()=>setWheelScale(1),170);
+    setWheelScale(0.975);
+    setTimeout(()=>setWheelScale(1),80);
   },[]);
 
   // Mouse handlers
@@ -340,14 +342,10 @@ export default function ColorWheel() {
     const segI=getSegAt(r.cx,r.cy);
 
     if (isDragging.current && segI>=0) {
-      selX.set(r.cx); selY.set(r.cy);
+      // commitSeg snaps to segment center — no raw cursor position
       commitSeg(segI,r.clientX,r.clientY,r.rect);
-    } else if (!isDragging.current && selIdx>=0) {
-      const mid=segMid(selIdx);
-      const dr=(R_IN+R_OUT)/2;
-      selX.set(CX+dr*Math.cos(mid));
-      selY.set(CY+dr*Math.sin(mid));
     }
+    // Dot always stays at selected segment center
 
     hoverRef.current=segI;
     setHoverIdx(segI);
@@ -370,13 +368,8 @@ export default function ColorWheel() {
     setPreviewCol(committed||null);
     setTiltX(0); setTiltY(0);
     if(canvasRef.current) canvasRef.current.style.cursor='default';
-    if(selIdx>=0){
-      const mid=segMid(selIdx);
-      const dr=(R_IN+R_OUT)/2;
-      selX.set(CX+dr*Math.cos(mid));
-      selY.set(CY+dr*Math.sin(mid));
-    }
-  },[committed,selIdx]);
+    // Dot stays at click position — do NOT move it on mouse leave
+  },[committed]);
 
   const onMouseUp=useCallback(()=>{ isDragging.current=false; },[]);
 
@@ -391,7 +384,7 @@ export default function ColorWheel() {
     const c=canvasRef.current; if(!c) return;
     const r=toCanvas(e,c);
     const segI=getSegAt(r.cx,r.cy);
-    if(segI>=0){ selX.set(r.cx); selY.set(r.cy); commitSeg(segI,r.clientX,r.clientY,r.rect); }
+    if(segI>=0){ commitSeg(segI,r.clientX,r.clientY,r.rect); }
   },[commitSeg]);
   const onTouchEnd=useCallback(()=>{ isDragging.current=false; },[]);
 
@@ -400,14 +393,7 @@ export default function ColorWheel() {
     return()=>window.removeEventListener('mouseup',onMouseUp);
   },[onMouseUp]);
 
-  useEffect(()=>{
-    if(selIdx>=0){
-      const mid=segMid(selIdx);
-      const dr=(R_IN+R_OUT)/2;
-      selX.set(CX+dr*Math.cos(mid));
-      selY.set(CY+dr*Math.sin(mid));
-    }
-  },[]);
+  // Dot position is set in commitSeg — nothing needed here
 
   const tints   = committed?getTints(committed.color):[];
   const shades  = committed?getShades(committed.color):[];
@@ -432,10 +418,11 @@ export default function ColorWheel() {
         Hover to preview &middot; Click or drag to select &middot; Choose a harmony scheme
       </p>
 
-      {/* Harmony tabs — grid on mobile */}
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))',gap:'0.45rem',justifyContent:'center',margin:'0 auto 2rem',maxWidth:'560px',padding:'0 1rem' }}>
+      {/* Harmony tabs */}
+      <div style={{ display:'flex',gap:'0.5rem',justifyContent:'center',flexWrap:'wrap',marginBottom:'2rem' }}>
         {HARMONY_KEYS.map(k=>(
           <motion.button key={k} onClick={()=>setScheme(k)}
+            whileHover={{ scale:1.04, y:-1 }}
             whileTap={{ scale:0.94 }}
             animate={{
               border:     scheme===k?'1.5px solid #e8ff47'          :'1px solid rgba(255,255,255,0.1)',
@@ -444,33 +431,30 @@ export default function ColorWheel() {
               boxShadow:  scheme===k?'0 0 20px rgba(232,255,71,0.2)':'none',
             }}
             transition={T_FAST}
-            style={{ padding:'0.5rem 0.8rem',borderRadius:'10px',cursor:'pointer',fontSize:'0.73rem',fontFamily:"'Inter',sans-serif",letterSpacing:'0.04em',textTransform:'uppercase',textAlign:'center' }}
+            style={{ padding:'0.45rem 1.1rem',borderRadius:'999px',cursor:'pointer',fontSize:'0.75rem',backdropFilter:'blur(12px)',fontFamily:"'Inter',sans-serif",letterSpacing:'0.05em',textTransform:'uppercase' }}
           >{HARMONY_LABELS[k]}</motion.button>
         ))}
       </div>
 
       {/* Main layout */}
-      <div style={{ display:'flex',gap:'2rem',alignItems:'flex-start',justifyContent:'center',flexWrap:'wrap',maxWidth:'1100px',margin:'0 auto',padding:'0 0.5rem' }}>
+      <div style={{ display:'flex',gap:'2.5rem',alignItems:'flex-start',justifyContent:'center',flexWrap:'wrap',maxWidth:'1100px',margin:'0 auto' }}>
 
-        {/* Wheel — responsive wrapper scales canvas to fit */}
+        {/* Wheel — scales to fit mobile, fixed SIZE on desktop */}
         <div style={{
-          width: '100%',
+          flexShrink: 0,
           overflow: 'hidden',
-          display: 'flex',
-          justifyContent: 'center',
-          height: (SIZE * canvasScale) + 'px',
+          width: Math.round(SIZE * canvasScale) + 'px',
+          height: Math.round(SIZE * canvasScale) + 'px',
+          position: 'relative',
         }}>
-        <div
-          ref={wrapRef}
-          style={{
-            position: 'relative',
-            width: SIZE + 'px',
-            height: SIZE + 'px',
-            flexShrink: 0,
-            transformOrigin: 'top center',
-            transform: 'scale(' + canvasScale + ')',
-          }}
-        >
+        <div ref={wrapRef} style={{
+          position: 'absolute',
+          top: 0, left: 0,
+          width: SIZE + 'px',
+          height: SIZE + 'px',
+          transformOrigin: 'top left',
+          transform: 'scale(' + canvasScale + ')',
+        }}>
 
           {/* Ambient glow */}
           <motion.div
@@ -509,12 +493,12 @@ export default function ColorWheel() {
             ref={canvasRef}
             width={SIZE} height={SIZE}
             animate={{
-              scale:   1,
+              scale:   wheelScale,
               rotateX: tiltX,
               rotateY: tiltY,
             }}
             transition={{
-              scale:   { type:'spring',stiffness:600,damping:22 },
+              scale:   { type:'spring',stiffness:1400,damping:40 },
               rotateX: T_FAST,
               rotateY: T_FAST,
             }}
@@ -629,10 +613,10 @@ export default function ColorWheel() {
             </AnimatePresence>
           </motion.div>
         </div>
-        </div>{/* end responsive wheel wrapper */}
+        </div>{/* end scale wrapper */}
 
         {/* Right panel */}
-        <div style={{ flex:'0 0 320px',minWidth:'min(320px,100%)',width:'100%',maxWidth:'480px',textAlign:'left',display:'flex',flexDirection:'column',gap:'1rem',padding:'0 0.5rem' }}>
+        <div style={{ flex:'0 0 320px',minWidth:'280px',textAlign:'left',display:'flex',flexDirection:'column',gap:'1rem' }}>
 
           {/* PROBLEM 6 FIX: stronger glass panels */}
           <motion.div
