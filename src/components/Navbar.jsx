@@ -29,19 +29,33 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
+    let rafId;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const mid = window.innerHeight * 0.4;
+        let best = null;
+        let bestDist = Infinity;
+        NAV_LINKS.forEach(({ id }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          const center = rect.top + rect.height / 2;
+          const dist = Math.abs(center - mid);
+          if (rect.bottom > 0 && rect.top < window.innerHeight && dist < bestDist) {
+            bestDist = dist;
+            best = id;
+          }
         });
-      },
-      { rootMargin: '-20% 0px -70% 0px' }
-    );
-    NAV_LINKS.forEach((link) => {
-      const el = document.getElementById(link.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
+        if (best) setActiveId(best);
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Close menu on outside click

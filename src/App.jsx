@@ -115,21 +115,37 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Track active section
+  // Track active section — re-runs on scroll, works with lazy-loaded sections
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); });
-      },
-      { rootMargin: '-28% 0px -52% 0px' }
-    );
-    const t = setTimeout(() => {
-      SECTION_IDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) obs.observe(el);
+    let rafId;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const mid = window.innerHeight * 0.4; // 40% from top of viewport
+        let best = null;
+        let bestDist = Infinity;
+        SECTION_IDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          // Distance of section center from viewport 40% mark
+          const center = rect.top + rect.height / 2;
+          const dist = Math.abs(center - mid);
+          // Only consider sections visible in viewport
+          if (rect.bottom > 0 && rect.top < window.innerHeight && dist < bestDist) {
+            bestDist = dist;
+            best = id;
+          }
+        });
+        if (best) setActiveSection(best);
       });
-    }, 120);
-    return () => { clearTimeout(t); obs.disconnect(); };
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll(); // run once on mount
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Listen to color picks from any component
